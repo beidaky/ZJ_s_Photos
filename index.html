@@ -268,7 +268,7 @@
     <main style="max-width:none;padding:3rem 1rem 5rem;">
       <header class="animate-float" style="margin-bottom:4rem;text-align:center;position:relative;">
         <h1 style="font-size:clamp(1.8rem,5vw,3.5rem);font-style:italic;color:rgba(240,98,146,0.8);letter-spacing:0.25em;font-weight:300;margin:0;">
-          ZJ's Photos
+          Eternal Muse
         </h1>
         <div class="divider"></div>
       </header>
@@ -321,17 +321,38 @@
 
 <script>
 (function(){
-  // ── Photos data (inline from photos.json) ──────────────────────────
-  const PHOTO_DATA = [
-    { id:"1", filename:"photo1.jpg", width:800,  height:1200 },
-    { id:"2", filename:"photo2.jpg", width:1200, height:800  },
-    { id:"3", filename:"photo3.jpg", width:800,  height:1000 },
-    { id:"4", filename:"photo4.jpg", width:1000, height:800  },
-    { id:"5", filename:"photo5.jpg", width:800,  height:800  },
-    { id:"6", filename:"photo6.jpg", width:900,  height:1300 },
-    { id:"7", filename:"photo7.jpg", width:1400, height:900  },
-    { id:"8", filename:"photo8.jpg", width:800,  height:1100 }
-  ].map(p => ({ ...p, url: `https://picsum.photos/seed/${p.id}/${p.width}/${p.height}` }));
+  // ── 自动检测 images/ 文件夹里的照片（p1.jpg ~ p20.jpg）─────────────
+  // 使用说明：把照片命名为 p1.jpg, p2.jpg ... p20.jpg，上传到仓库的 images/ 文件夹
+  // 代码会自动检测哪些存在，自动读取真实宽高，无需手动修改任何代码
+
+  const MAX_PHOTOS = 20; // 最多支持20张，可以改大
+
+  function getImageSize(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload  = () => resolve({ width: img.naturalWidth, height: img.naturalHeight, exists: true });
+      img.onerror = () => resolve({ exists: false });
+      img.src = url;
+    });
+  }
+
+  async function loadPhotoData() {
+    const checks = [];
+    for (let i = 1; i <= MAX_PHOTOS; i++) {
+      const url = `./images/p${i}.jpg`;
+      checks.push(getImageSize(url).then(result => ({ i, url, ...result })));
+    }
+    const results = await Promise.all(checks);
+    return results
+      .filter(r => r.exists)
+      .map(r => ({
+        id:       String(r.i),
+        filename: `p${r.i}.jpg`,
+        width:    r.width,
+        height:   r.height,
+        url:      r.url
+      }));
+  }
 
   let photos = [];
   let theme = 'light';
@@ -508,28 +529,53 @@
   let displayPhotos = [];
   let batchCount = 0;
 
-  function loadMore() {
-    const nextBatch = [];
-    for(let i=0;i<3;i++){
-      PHOTO_DATA.forEach(p => nextBatch.push({
-        ...p,
-        id: `batch-${batchCount}-${i}-${p.id}`
-      }));
-    }
-    batchCount++;
-    displayPhotos = displayPhotos.concat(nextBatch);
-    buildGrid(displayPhotos);
-  }
-
-  const observer = new IntersectionObserver(entries => {
-    if(entries[0].isIntersecting) loadMore();
-  }, { rootMargin:'3000px', threshold:0.01 });
-
+  // observer 在 init() 里初始化（需要等照片数据加载完）
+  const observer = new IntersectionObserver(() => {}, {});
   observer.observe(document.getElementById('end-loader'));
 
   // ── Init ───────────────────────────────────────────────────────────
-  function init() {
-    // Initial large batch
+  async function init() {
+    let PHOTO_DATA = await loadPhotoData();
+
+    // 如果 images/ 文件夹里一张都没有（比如本地预览），就用示例图顶替
+    if (PHOTO_DATA.length === 0) {
+      const fallback = [
+        { id:"1", width:800,  height:1200 },
+        { id:"2", width:1200, height:800  },
+        { id:"3", width:800,  height:1000 },
+        { id:"4", width:1000, height:800  },
+        { id:"5", width:800,  height:800  },
+        { id:"6", width:900,  height:1300 },
+        { id:"7", width:1400, height:900  },
+        { id:"8", width:800,  height:1100 }
+      ];
+      PHOTO_DATA = fallback.map(p => ({
+        ...p,
+        filename: `photo${p.id}.jpg`,
+        url: `https://picsum.photos/seed/${p.id}/${p.width}/${p.height}`
+      }));
+    }
+
+    // 重新绑定 loadMore 使用真实数据
+    function loadMore() {
+      const nextBatch = [];
+      for(let i=0;i<3;i++){
+        PHOTO_DATA.forEach(p => nextBatch.push({
+          ...p, id:`batch-${batchCount}-${i}-${p.id}`
+        }));
+      }
+      batchCount++;
+      displayPhotos = displayPhotos.concat(nextBatch);
+      buildGrid(displayPhotos);
+    }
+
+    observer.disconnect();
+    const newObserver = new IntersectionObserver(entries => {
+      if(entries[0].isIntersecting) loadMore();
+    }, { rootMargin:'3000px', threshold:0.01 });
+    newObserver.observe(document.getElementById('end-loader'));
+
+    // 初始批次
     const initialBuffer = [];
     for(let i=0;i<6;i++){
       PHOTO_DATA.forEach(p => initialBuffer.push({
