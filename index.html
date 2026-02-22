@@ -24,8 +24,7 @@
     body {
       background-color: var(--bg-color);
       color: var(--text-color);
-      margin: 0;
-      overflow-x: hidden;
+      margin: 0; overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       transition: background-color 0.5s ease, color 0.5s ease;
       font-family: 'Cormorant Garamond', Georgia, serif;
@@ -43,219 +42,90 @@
       backdrop-filter: blur(12px);
       border: 1px solid rgba(240,98,146,0.2);
     }
-    [data-theme='dark'] .glass-btn {
-      background: rgba(0,0,0,0.2);
-    }
-    @keyframes floating {
-      0%,100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
+    [data-theme='dark'] .glass-btn { background: rgba(0,0,0,0.2); }
+
+    @keyframes floating { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
     .animate-float { animation: floating 3s ease-in-out infinite; }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to{transform:rotate(360deg)} }
     .animate-spin { animation: spin 1s linear infinite; }
-
-    @keyframes pulse {
-      0%,100% { opacity: 0.5; }
-      50% { opacity: 1; }
-    }
+    @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
     .animate-pulse { animation: pulse 2s ease-in-out infinite; }
-
-    @keyframes bounce {
-      0%,100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
     .animate-bounce { animation: bounce 1s ease-in-out infinite; }
 
-    /* Card styles */
+    /* ── 照片卡片 ── */
     .photo-card {
-      position: relative;
-      cursor: pointer;
-      overflow: hidden;
-      border-radius: 2.5rem;
-      background: var(--card-bg);
+      position: relative; cursor: pointer; overflow: hidden;
+      border-radius: 2.5rem; background: var(--card-bg);
       transition: all 1s cubic-bezier(0.19,1,0.22,1);
       border: 2px solid transparent;
     }
-    .photo-card:hover {
-      box-shadow: 0 40px 80px -15px rgba(240,98,146,0.2);
-      border-color: rgba(252,228,236,0.3);
-    }
+    .photo-card:hover { box-shadow: 0 40px 80px -15px rgba(240,98,146,0.2); border-color: rgba(252,228,236,0.3); }
     .photo-card:active { transform: scale(0.98); }
-
-    .photo-card .overlay {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0;
-      transition: opacity 0.7s;
-      background: rgba(0,0,0,0.05);
-      pointer-events: none;
-    }
+    .photo-card .overlay { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .7s;background:rgba(0,0,0,.05);pointer-events:none; }
     .photo-card:hover .overlay { opacity: 1; }
-
-    .overlay-star {
-      color: white;
-      font-size: 1.875rem;
-      font-weight: 300;
-      transform: scale(0);
-      transition: transform 0.7s 0.1s;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
-    }
+    .overlay-star { color:white;font-size:1.875rem;font-weight:300;transform:scale(0);transition:transform .7s .1s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5)); }
     .photo-card:hover .overlay-star { transform: scale(1); }
-
-    .photo-card img {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      opacity: 0;
-      transition: opacity 1s ease, transform 1s ease;
-    }
+    .photo-card img { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1s ease,transform 1s ease; }
     .photo-card:hover img { transform: scale(1.1); }
     .photo-card img.loaded { opacity: 1; }
+    .skeleton { position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-soft),var(--bg-color)); }
 
-    .skeleton {
-      position: absolute; inset: 0;
-      background: linear-gradient(135deg, var(--accent-soft), var(--bg-color));
-    }
+    /* ── Lightbox ── */
+    #lightbox { position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .7s cubic-bezier(0.19,1,0.22,1); }
+    #lightbox.open { opacity:1;pointer-events:auto; }
+    #lightbox-backdrop { position:absolute;inset:0;backdrop-filter:blur(24px); }
+    [data-theme='light'] #lightbox-backdrop { background:rgba(255,249,250,.85); }
+    [data-theme='dark']  #lightbox-backdrop { background:rgba(18,15,16,.85); }
+    #lightbox-content { position:relative;max-width:85vw;max-height:85vh;transform:scale(.95) translateY(10px);opacity:0;transition:all 1s cubic-bezier(0.19,1,0.22,1); }
+    #lightbox.open #lightbox-content { transform:scale(1) translateY(0);opacity:1; }
+    #lightbox-img { max-width:100%;max-height:85vh;object-fit:contain;border-radius:2.5rem;box-shadow:0 50px 100px rgba(0,0,0,.3);border:4px solid var(--card-bg); }
+    #lightbox-caption { position:absolute;bottom:-4rem;left:0;width:100%;text-align:center;color:rgba(240,98,146,.4);font-size:10px;font-weight:500;letter-spacing:.5em;text-transform:uppercase; }
+    #lightbox-close { position:absolute;top:2rem;right:2rem;color:rgba(240,98,146,.5);cursor:pointer;transition:all .5s;z-index:10;background:none;border:none;padding:.5rem; }
+    #lightbox-close:hover { color:#f06292;transform:rotate(90deg); }
 
-    /* Lightbox */
-    #lightbox {
-      position: fixed; inset: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.7s cubic-bezier(0.19,1,0.22,1);
-    }
-    #lightbox.open { opacity: 1; pointer-events: auto; }
+    /* ── Loading ── */
+    #loading { display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;color:rgba(240,98,146,.6);font-weight:500;letter-spacing:.2em;text-transform:uppercase; }
+    #app { display:none; }
 
-    #lightbox-backdrop {
-      position: absolute; inset: 0;
-      background: rgba(0,0,0,0.0);
-      backdrop-filter: blur(24px);
-    }
-    [data-theme='light'] #lightbox-backdrop {
-      background: rgba(255,249,250,0.8);
-    }
-    [data-theme='dark'] #lightbox-backdrop {
-      background: rgba(18,15,16,0.8);
-    }
+    /* ── 控制按钮 ── */
+    #controls { position:fixed;bottom:2rem;right:2rem;z-index:40;display:flex;flex-direction:column;gap:1rem; }
+    .ctrl-btn { padding:1.25rem;border-radius:50%;cursor:pointer;transition:all .7s;box-shadow:0 20px 40px rgba(0,0,0,.1);border:none;outline:none;display:flex;align-items:center;justify-content:center; }
+    .ctrl-btn:hover { transform:scale(1.1); }
+    .ctrl-btn:active { transform:scale(.95); }
+    .ctrl-btn.active { transform:scale(1.1);border-color:rgba(240,98,146,.6)!important;background:rgba(240,98,146,.08)!important; }
 
-    #lightbox-content {
-      position: relative;
-      max-width: 85vw; max-height: 85vh;
-      transform: scale(0.95) translateY(10px);
-      opacity: 0;
-      transition: all 1s cubic-bezier(0.19,1,0.22,1);
+    /* ── 音乐播放器 ── */
+    #music-panel {
+      position:fixed;bottom:2rem;left:2rem;z-index:40;
+      background:rgba(255,255,255,.12);backdrop-filter:blur(16px);
+      border:1px solid rgba(240,98,146,.2);border-radius:1.5rem;
+      padding:.875rem 1.25rem .875rem 1rem;
+      display:none;align-items:center;gap:.75rem;
+      min-width:200px;box-shadow:0 20px 40px rgba(0,0,0,.1);
+      transition:opacity .5s; overflow:hidden;
     }
-    #lightbox.open #lightbox-content {
-      transform: scale(1) translateY(0);
-      opacity: 1;
-    }
-    #lightbox-img {
-      max-width: 100%; max-height: 85vh;
-      object-fit: contain;
-      border-radius: 2.5rem;
-      box-shadow: 0 50px 100px rgba(0,0,0,0.3);
-      border: 4px solid var(--card-bg);
-    }
-    #lightbox-caption {
-      position: absolute; bottom: -4rem; left: 0; width: 100%;
-      text-align: center;
-      color: rgba(240,98,146,0.4);
-      font-size: 10px; font-weight: 500;
-      letter-spacing: 0.5em; text-transform: uppercase;
-    }
+    [data-theme='dark'] #music-panel { background:rgba(0,0,0,.25); }
+    #music-panel.visible { display:flex; }
+    #music-track-name { font-size:11px;letter-spacing:.12em;color:rgba(240,98,146,.75);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;flex:1; }
+    #music-progress-wrap { position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(240,98,146,.1);overflow:hidden; }
+    #music-progress-bar { height:100%;width:0%;background:linear-gradient(to right,#f06292,#ff80ab);transition:width 1s linear; }
+    #btn-music-play { background:none;border:none;cursor:pointer;color:#f06292;padding:0;display:flex;align-items:center;justify-content:center;transition:transform .3s;flex-shrink:0; }
+    #btn-music-play:hover { transform:scale(1.15); }
 
-    /* Loading */
-    #loading {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      min-height: 100vh;
-      color: rgba(240,98,146,0.6);
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-    }
-    #app { display: none; }
-
-    /* Controls */
-    #controls {
-      position: fixed; bottom: 2rem; right: 2rem;
-      z-index: 40;
-      display: flex; flex-direction: column; gap: 1rem;
-    }
-    .ctrl-btn {
-      padding: 1.25rem;
-      border-radius: 50%;
-      cursor: pointer;
-      transition: all 0.7s;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      border: none;
-      outline: none;
-    }
-    .ctrl-btn:hover { transform: scale(1.1); }
-    .ctrl-btn:active { transform: scale(0.95); }
-    .ctrl-btn.active {
-      transform: scale(1.1);
-      border-color: rgba(240,98,146,0.6) !important;
-      background: rgba(240,98,146,0.05) !important;
-    }
-
-    #lightbox-close {
-      position: absolute; top: 2rem; right: 2rem;
-      color: rgba(240,98,146,0.5);
-      cursor: pointer;
-      transition: all 0.5s;
-      z-index: 10; background: none; border: none; padding: 0.5rem;
-    }
-    #lightbox-close:hover {
-      color: #f06292;
-      transform: rotate(90deg);
-    }
-
-    /* Masonry grid */
-    .masonry-desktop {
-      display: none;
-      gap: 2.5rem;
-      width: 100%;
-      max-width: 1500px;
-    }
-    .masonry-mobile {
-      display: flex;
-      gap: 1.25rem;
-      width: 100%;
-    }
-    @media (min-width: 768px) {
-      .masonry-desktop { display: flex; }
-      .masonry-mobile { display: none; }
-    }
-    .masonry-col {
-      display: flex; flex-direction: column;
-      flex: 1; gap: 2.5rem;
-    }
-    .masonry-col-mobile {
-      display: flex; flex-direction: column;
-      flex: 1; gap: 1.25rem;
-    }
-
-    .divider {
-      width: 4rem; height: 1px;
-      background: linear-gradient(to right, transparent, rgba(240,98,146,0.4), transparent);
-      margin: 1rem auto 0;
-    }
-
-    /* End loader dot */
-    #end-loader {
-      height: 40vh; width: 100%;
-      display: flex; align-items: center; justify-content: center;
-    }
+    /* ── 瀑布流 ── */
+    .masonry-desktop { display:none;gap:2.5rem;width:100%;max-width:1500px; }
+    .masonry-mobile  { display:flex;gap:1.25rem;width:100%; }
+    @media(min-width:768px){ .masonry-desktop{display:flex} .masonry-mobile{display:none} }
+    .masonry-col        { display:flex;flex-direction:column;flex:1;gap:2.5rem; }
+    .masonry-col-mobile { display:flex;flex-direction:column;flex:1;gap:1.25rem; }
+    .divider { width:4rem;height:1px;background:linear-gradient(to right,transparent,rgba(240,98,146,.4),transparent);margin:1rem auto 0; }
+    #end-loader { height:40vh;width:100%;display:flex;align-items:center;justify-content:center; }
   </style>
 </head>
 <body>
   <canvas id="bg-canvas"></canvas>
 
-  <!-- Loading screen -->
   <div id="loading">
     <div style="position:relative;margin-bottom:1.5rem;">
       <div style="width:3rem;height:3rem;border:4px solid rgba(240,98,146,0.1);border-top-color:#f06292;border-radius:50%;" class="animate-spin"></div>
@@ -263,23 +133,18 @@
     Curating Dreamscape
   </div>
 
-  <!-- Main app -->
   <div id="app">
     <main style="max-width:none;padding:3rem 1rem 5rem;">
       <header class="animate-float" style="margin-bottom:4rem;text-align:center;position:relative;">
         <h1 style="font-size:clamp(1.8rem,5vw,3.5rem);font-style:italic;color:rgba(240,98,146,0.8);letter-spacing:0.25em;font-weight:300;margin:0;">
-          ZJ's Photos | 相册
+          Eternal Muse
         </h1>
         <div class="divider"></div>
       </header>
-
       <div style="display:flex;justify-content:center;">
-        <!-- Desktop 4 cols -->
         <div class="masonry-desktop" id="grid-desktop"></div>
-        <!-- Mobile 2 cols -->
-        <div class="masonry-mobile" id="grid-mobile"></div>
+        <div class="masonry-mobile"  id="grid-mobile"></div>
       </div>
-
       <div id="end-loader">
         <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;opacity:0.3;">
           <div style="width:0.375rem;height:0.375rem;background:#f06292;border-radius:50%;" class="animate-bounce"></div>
@@ -288,11 +153,14 @@
     </main>
   </div>
 
-  <!-- Controls -->
+  <!-- 右下角控制按钮 -->
   <div id="controls">
     <button id="btn-theme" class="ctrl-btn glass-btn" title="Toggle Theme">
-      <svg xmlns="http://www.w3.org/2000/svg" style="width:1.5rem;height:1.5rem;color:#f06292;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" style="width:1.5rem;height:1.5rem;color:#f06292;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+      </svg>
+      <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" style="width:1.5rem;height:1.5rem;color:#f06292;display:none;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
       </svg>
     </button>
     <button id="btn-scroll" class="ctrl-btn glass-btn" title="Auto Scroll">
@@ -303,6 +171,20 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 9v6m4-6v6"/>
       </svg>
     </button>
+  </div>
+
+  <!-- 左下角音乐播放器（有音乐才显示） -->
+  <div id="music-panel">
+    <button id="btn-music-play" title="Play / Pause">
+      <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" style="width:1.4rem;height:1.4rem;" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" style="width:1.4rem;height:1.4rem;display:none;" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M6 19h4V5H6zm8-14v14h4V5z"/>
+      </svg>
+    </button>
+    <div id="music-track-name">♪</div>
+    <div id="music-progress-wrap"><div id="music-progress-bar"></div></div>
   </div>
 
   <!-- Lightbox -->
@@ -321,276 +203,244 @@
 
 <script>
 (function(){
-  // ── 自动检测 images/ 文件夹里的照片（p1.jpg ~ p20.jpg）─────────────
-  // 使用说明：把照片命名为 p1.jpg, p2.jpg ... p20.jpg，上传到仓库的 images/ 文件夹
-  // 代码会自动检测哪些存在，自动读取真实宽高，无需手动修改任何代码
 
-  const MAX_PHOTOS = 20; // 最多支持20张，可以改大
+  // ════════════════════════════════════════════════
+  //  ★ 配置区 — 只需关注这里
+  // ════════════════════════════════════════════════
 
-  function getImageSize(url) {
-    return new Promise((resolve) => {
+  const MAX_PHOTOS   = 50;                            // 最多支持50张
+  const PHOTO_FORMATS = ['jpg','jpeg','png','webp'];  // 支持的图片格式
+
+  // 音乐文件：把音乐放到仓库的 music/ 文件夹
+  // 代码会按顺序尝试，找到第一个存在的就用
+  // 如果你的文件名不在这里，直接加一行 'xxx.mp3' 就好
+  const MUSIC_CANDIDATES = [
+    './music/bgm.mp3','./music/bgm.ogg','./music/bgm.wav',
+    './music/music.mp3','./music/music.ogg','./music/music.wav',
+    './music/background.mp3','./music/background.ogg',
+  ];
+
+  // ════════════════════════════════════════════════
+  //  图片自动检测
+  //  命名规则：p01.jpg, p02.jpg ... p50.jpg
+  //  也支持：p1.jpg, p2.jpg（不带前导零也可以）
+  //  也支持：.jpeg .png .webp 格式
+  // ════════════════════════════════════════════════
+
+  function probeImage(url) {
+    return new Promise(resolve => {
       const img = new Image();
-      img.onload  = () => resolve({ width: img.naturalWidth, height: img.naturalHeight, exists: true });
-      img.onerror = () => resolve({ exists: false });
+      img.onload  = () => resolve({ ok:true, w:img.naturalWidth, h:img.naturalHeight });
+      img.onerror = () => resolve({ ok:false });
       img.src = url;
     });
   }
 
-  async function loadPhotoData() {
-    const checks = [];
-    for (let i = 1; i <= MAX_PHOTOS; i++) {
-      const url = `./images/p${i}.jpg`;
-      checks.push(getImageSize(url).then(result => ({ i, url, ...result })));
+  async function findPhoto(i) {
+    const pad  = String(i).padStart(2,'0');
+    const bare = String(i);
+    const candidates = [];
+    for(const fmt of PHOTO_FORMATS){
+      candidates.push(`./images/p${pad}.${fmt}`);
+      candidates.push(`./images/p${bare}.${fmt}`);
     }
-    const results = await Promise.all(checks);
-    return results
-      .filter(r => r.exists)
-      .map(r => ({
-        id:       String(r.i),
-        filename: `p${r.i}.jpg`,
-        width:    r.width,
-        height:   r.height,
-        url:      r.url
-      }));
+    for(const url of candidates){
+      const r = await probeImage(url);
+      if(r.ok) return { id:String(i), filename:url.split('/').pop(), width:r.w, height:r.h, url };
+    }
+    return null;
   }
 
-  let photos = [];
+  async function loadPhotoData() {
+    const results = await Promise.all(
+      Array.from({length:MAX_PHOTOS},(_,k)=>findPhoto(k+1))
+    );
+    return results.filter(Boolean);
+  }
+
+  // ════════════════════════════════════════════════
+  //  音乐播放器
+  // ════════════════════════════════════════════════
+
+  const audio        = new Audio();
+  audio.loop         = true;
+  const musicPanel   = document.getElementById('music-panel');
+  const trackName    = document.getElementById('music-track-name');
+  const btnPlay      = document.getElementById('btn-music-play');
+  const iconPlay     = document.getElementById('icon-play');
+  const iconPause    = document.getElementById('icon-pause');
+  const progressBar  = document.getElementById('music-progress-bar');
+  let musicReady     = false;
+
+  async function detectMusic() {
+    for(const url of MUSIC_CANDIDATES){
+      const ok = await new Promise(res=>{
+        const t=new Audio();
+        t.oncanplaythrough=()=>res(true);
+        t.onerror=()=>res(false);
+        t.src=url;
+      });
+      if(ok){
+        audio.src = url;
+        const name = url.split('/').pop().replace(/\.[^.]+$/,'').replace(/[-_]/g,' ');
+        trackName.textContent = '♪  ' + name;
+        musicPanel.classList.add('visible');
+        musicReady = true;
+        return;
+      }
+    }
+  }
+
+  audio.addEventListener('timeupdate',()=>{
+    if(!audio.duration) return;
+    progressBar.style.width = (audio.currentTime/audio.duration*100)+'%';
+  });
+
+  btnPlay.addEventListener('click',()=>{
+    if(!musicReady) return;
+    if(audio.paused){
+      audio.play();
+      iconPlay.style.display='none'; iconPause.style.display='';
+    } else {
+      audio.pause();
+      iconPlay.style.display=''; iconPause.style.display='none';
+    }
+  });
+
+  // ════════════════════════════════════════════════
+  //  Sparkle 粒子
+  // ════════════════════════════════════════════════
+
   let theme = 'light';
-  let isAutoScrolling = false;
-  let scrollAnimId = null;
-
-  // ── Sparkle canvas ─────────────────────────────────────────────────
   const canvas = document.getElementById('bg-canvas');
-  const ctx = canvas.getContext('2d');
-  let particles = [];
-  let cw = canvas.width = window.innerWidth;
-  let ch = canvas.height = window.innerHeight;
-
-  window.addEventListener('resize', () => {
-    cw = canvas.width = window.innerWidth;
-    ch = canvas.height = window.innerHeight;
+  const ctx    = canvas.getContext('2d');
+  let particles=[], cw=canvas.width=innerWidth, ch=canvas.height=innerHeight;
+  window.addEventListener('resize',()=>{ cw=canvas.width=innerWidth; ch=canvas.height=innerHeight; });
+  window.addEventListener('mousemove',e=>{
+    for(let i=0;i<3;i++){
+      const h=340+Math.random()*20, s=Math.random()*4+1;
+      particles.push({x:e.clientX,y:e.clientY,vx:(Math.random()-.5)*2,vy:(Math.random()-.5)*2,life:1,size:s,
+        color:theme==='light'?`hsla(${h},100%,80%,`:`hsla(${h},80%,60%,`});
+    }
   });
-
-  function createParticle(x, y) {
-    const size = Math.random() * 4 + 1;
-    const h = 340 + Math.random() * 20;
-    const colorBase = theme === 'light'
-      ? `hsla(${h}, 100%, 80%,`
-      : `hsla(${h}, 80%, 60%,`;
-    return { x, y, vx:(Math.random()-0.5)*2, vy:(Math.random()-0.5)*2, life:1, color:colorBase, size };
-  }
-
-  window.addEventListener('mousemove', e => {
-    for(let i=0;i<3;i++) particles.push(createParticle(e.clientX, e.clientY));
-  });
-
-  (function animate(){
+  (function loop(){
     ctx.clearRect(0,0,cw,ch);
     for(let i=0;i<particles.length;i++){
-      const p=particles[i];
-      p.x+=p.vx; p.y+=p.vy; p.life-=0.008;
+      const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.life-=.008;
       ctx.fillStyle=p.color+p.life+')';
       ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
-      if(p.life<=0){ particles.splice(i,1); i--; }
+      if(p.life<=0){particles.splice(i,1);i--;}
     }
-    requestAnimationFrame(animate);
+    requestAnimationFrame(loop);
   })();
 
-  // ── Theme toggle ───────────────────────────────────────────────────
-  const htmlEl = document.documentElement;
-  const btnTheme = document.getElementById('btn-theme');
-  btnTheme.addEventListener('click', () => {
-    theme = theme==='light'?'dark':'light';
-    htmlEl.setAttribute('data-theme', theme);
-    btnTheme.innerHTML = theme==='light'
-      ? `<svg xmlns="http://www.w3.org/2000/svg" style="width:1.5rem;height:1.5rem;color:#f06292;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>`
-      : `<svg xmlns="http://www.w3.org/2000/svg" style="width:1.5rem;height:1.5rem;color:#f06292;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`;
+  // ════════════════════════════════════════════════
+  //  主题 / 滚动 按钮
+  // ════════════════════════════════════════════════
+
+  const htmlEl=document.documentElement;
+  document.getElementById('btn-theme').addEventListener('click',()=>{
+    theme=theme==='light'?'dark':'light';
+    htmlEl.setAttribute('data-theme',theme);
+    document.getElementById('icon-moon').style.display=theme==='light'?'':'none';
+    document.getElementById('icon-sun').style.display =theme==='light'?'none':'';
   });
 
-  // ── Auto-scroll ────────────────────────────────────────────────────
-  const btnScroll = document.getElementById('btn-scroll');
-  const iconOff = document.getElementById('icon-scroll-off');
-  const iconOn  = document.getElementById('icon-scroll-on');
-
-  btnScroll.addEventListener('click', () => {
-    isAutoScrolling = !isAutoScrolling;
-    btnScroll.classList.toggle('active', isAutoScrolling);
-    iconOff.style.display = isAutoScrolling ? 'none' : '';
-    iconOn.style.display  = isAutoScrolling ? '' : 'none';
-    if(isAutoScrolling){
-      (function scroll(){
-        window.scrollBy({top:1.5,behavior:'auto'});
-        scrollAnimId = requestAnimationFrame(scroll);
-      })();
-    } else {
-      if(scrollAnimId) cancelAnimationFrame(scrollAnimId);
-    }
+  let isScrolling=false, scrollId=null;
+  document.getElementById('btn-scroll').addEventListener('click',()=>{
+    isScrolling=!isScrolling;
+    document.getElementById('btn-scroll').classList.toggle('active',isScrolling);
+    document.getElementById('icon-scroll-off').style.display=isScrolling?'none':'';
+    document.getElementById('icon-scroll-on').style.display =isScrolling?'':'none';
+    if(isScrolling){
+      (function s(){ window.scrollBy({top:1.0,behavior:'auto'}); // ← 滚动速度，改小更慢
+        scrollId=requestAnimationFrame(s); })();
+    } else { cancelAnimationFrame(scrollId); }
   });
 
-  // ── Masonry distribution ───────────────────────────────────────────
-  function distributePhotos(items, cols) {
-    const colArrays = Array.from({length:cols},()=>[]);
-    const colHeights = new Array(cols).fill(0);
-    items.forEach(photo => {
-      let shortest=0;
-      for(let i=1;i<cols;i++) if(colHeights[i]<colHeights[shortest]) shortest=i;
-      colArrays[shortest].push(photo);
-      colHeights[shortest]+=(photo.height/photo.width);
-    });
-    return colArrays;
+  // ════════════════════════════════════════════════
+  //  瀑布流 & 卡片
+  // ════════════════════════════════════════════════
+
+  function distribute(items,cols){
+    const c=Array.from({length:cols},()=>[]), h=new Array(cols).fill(0);
+    items.forEach(p=>{ let s=0; for(let i=1;i<cols;i++) if(h[i]<h[s]) s=i; c[s].push(p); h[s]+=p.height/p.width; });
+    return c;
   }
 
-  // ── Create photo card ──────────────────────────────────────────────
-  function createCard(photo) {
-    const aspectRatio = (photo.height / photo.width) * 100;
-    const card = document.createElement('div');
-    card.className = 'photo-card';
-
-    const inner = document.createElement('div');
-    inner.style.cssText = `padding-bottom:${aspectRatio}%;position:relative;width:100%;`;
-
-    const skeleton = document.createElement('div');
-    skeleton.className = 'skeleton animate-pulse';
-
-    const img = document.createElement('img');
-    img.src = photo.url;
-    img.alt = photo.filename;
-    img.loading = 'lazy';
-    img.addEventListener('load', () => img.classList.add('loaded'));
-
-    const overlay = document.createElement('div');
-    overlay.className = 'overlay';
-    const star = document.createElement('span');
-    star.className = 'overlay-star';
-    star.textContent = '✧';
-    overlay.appendChild(star);
-
-    inner.appendChild(skeleton);
-    inner.appendChild(img);
-    card.appendChild(inner);
-    card.appendChild(overlay);
-
-    card.addEventListener('click', () => openLightbox(photo));
+  function makeCard(photo){
+    const card=document.createElement('div'); card.className='photo-card';
+    const inner=document.createElement('div');
+    inner.style.cssText=`padding-bottom:${photo.height/photo.width*100}%;position:relative;width:100%;`;
+    const sk=document.createElement('div'); sk.className='skeleton animate-pulse';
+    const img=document.createElement('img'); img.src=photo.url; img.alt=photo.filename; img.loading='lazy';
+    img.addEventListener('load',()=>img.classList.add('loaded'));
+    const ov=document.createElement('div'); ov.className='overlay';
+    const st=document.createElement('span'); st.className='overlay-star'; st.textContent='✧'; ov.appendChild(st);
+    inner.appendChild(sk); inner.appendChild(img); card.appendChild(inner); card.appendChild(ov);
+    card.addEventListener('click',()=>openLightbox(photo));
     return card;
   }
 
-  // ── Build / update grid ────────────────────────────────────────────
-  function buildGrid(items) {
-    const desktopGrid = document.getElementById('grid-desktop');
-    const mobileGrid  = document.getElementById('grid-mobile');
-
-    const desktopCols = distributePhotos(items, 4);
-    const mobileCols  = distributePhotos(items, 2);
-
-    // Desktop
-    desktopGrid.innerHTML = '';
-    desktopCols.forEach(col => {
-      const colEl = document.createElement('div');
-      colEl.className = 'masonry-col';
-      col.forEach(p => colEl.appendChild(createCard(p)));
-      desktopGrid.appendChild(colEl);
-    });
-
-    // Mobile
-    mobileGrid.innerHTML = '';
-    mobileCols.forEach(col => {
-      const colEl = document.createElement('div');
-      colEl.className = 'masonry-col-mobile';
-      col.forEach(p => colEl.appendChild(createCard(p)));
-      mobileGrid.appendChild(colEl);
-    });
+  function buildGrid(items){
+    const dg=document.getElementById('grid-desktop'), mg=document.getElementById('grid-mobile');
+    [dg,mg].forEach(g=>g.innerHTML='');
+    distribute(items,4).forEach(col=>{ const el=document.createElement('div'); el.className='masonry-col'; col.forEach(p=>el.appendChild(makeCard(p))); dg.appendChild(el); });
+    distribute(items,2).forEach(col=>{ const el=document.createElement('div'); el.className='masonry-col-mobile'; col.forEach(p=>el.appendChild(makeCard(p))); mg.appendChild(el); });
   }
 
-  // ── Lightbox ───────────────────────────────────────────────────────
-  const lightbox     = document.getElementById('lightbox');
-  const lightboxImg  = document.getElementById('lightbox-img');
-  const lightboxCap  = document.getElementById('lightbox-caption');
-  const lightboxClose= document.getElementById('lightbox-close');
-  const lightboxBack = document.getElementById('lightbox-backdrop');
+  // ════════════════════════════════════════════════
+  //  Lightbox
+  // ════════════════════════════════════════════════
 
-  function openLightbox(photo) {
-    lightboxImg.src = photo.url;
-    lightboxImg.alt = photo.filename;
-    lightboxCap.textContent = `Captured Muse · Edition ${photo.id.slice(0,4)}`;
-    document.body.style.overflow = 'hidden';
-    lightbox.classList.add('open');
+  const lb=document.getElementById('lightbox');
+  function openLightbox(p){
+    document.getElementById('lightbox-img').src=p.url;
+    document.getElementById('lightbox-caption').textContent=`Captured Muse · ${p.filename}`;
+    document.body.style.overflow='hidden'; lb.classList.add('open');
   }
+  function closeLightbox(){ lb.classList.remove('open'); document.body.style.overflow=''; }
+  document.getElementById('lightbox-close').addEventListener('click',closeLightbox);
+  document.getElementById('lightbox-backdrop').addEventListener('click',closeLightbox);
+  window.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLightbox(); });
 
-  function closeLightbox() {
-    lightbox.classList.remove('open');
-    document.body.style.overflow = '';
-  }
+  // ════════════════════════════════════════════════
+  //  初始化
+  // ════════════════════════════════════════════════
 
-  lightboxClose.addEventListener('click', closeLightbox);
-  lightboxBack.addEventListener('click', closeLightbox);
-  window.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox(); });
+  let displayPhotos=[], batch=0;
+  const obs=new IntersectionObserver(()=>{},{});
+  obs.observe(document.getElementById('end-loader'));
 
-  // ── Infinite scroll / load more ────────────────────────────────────
-  let displayPhotos = [];
-  let batchCount = 0;
+  async function init(){
+    const [photos] = await Promise.all([loadPhotoData(), detectMusic()]);
 
-  // observer 在 init() 里初始化（需要等照片数据加载完）
-  const observer = new IntersectionObserver(() => {}, {});
-  observer.observe(document.getElementById('end-loader'));
+    let data = photos.length ? photos : [
+      {id:'1',width:800,height:1200},{id:'2',width:1200,height:800},
+      {id:'3',width:800,height:1000},{id:'4',width:1000,height:800},
+      {id:'5',width:800,height:800}, {id:'6',width:900,height:1300},
+      {id:'7',width:1400,height:900},{id:'8',width:800,height:1100}
+    ].map(p=>({...p,filename:`photo${p.id}.jpg`,url:`https://picsum.photos/seed/${p.id}/${p.width}/${p.height}`}));
 
-  // ── Init ───────────────────────────────────────────────────────────
-  async function init() {
-    let PHOTO_DATA = await loadPhotoData();
-
-    // 如果 images/ 文件夹里一张都没有（比如本地预览），就用示例图顶替
-    if (PHOTO_DATA.length === 0) {
-      const fallback = [
-        { id:"1", width:800,  height:1200 },
-        { id:"2", width:1200, height:800  },
-        { id:"3", width:800,  height:1000 },
-        { id:"4", width:1000, height:800  },
-        { id:"5", width:800,  height:800  },
-        { id:"6", width:900,  height:1300 },
-        { id:"7", width:1400, height:900  },
-        { id:"8", width:800,  height:1100 }
-      ];
-      PHOTO_DATA = fallback.map(p => ({
-        ...p,
-        filename: `photo${p.id}.jpg`,
-        url: `https://picsum.photos/seed/${p.id}/${p.width}/${p.height}`
-      }));
+    function more(){
+      const b=[];
+      for(let i=0;i<3;i++) data.forEach(p=>b.push({...p,id:`b${batch}-${i}-${p.id}`}));
+      batch++; displayPhotos=displayPhotos.concat(b); buildGrid(displayPhotos);
     }
 
-    // 重新绑定 loadMore 使用真实数据
-    function loadMore() {
-      const nextBatch = [];
-      for(let i=0;i<3;i++){
-        PHOTO_DATA.forEach(p => nextBatch.push({
-          ...p, id:`batch-${batchCount}-${i}-${p.id}`
-        }));
-      }
-      batchCount++;
-      displayPhotos = displayPhotos.concat(nextBatch);
-      buildGrid(displayPhotos);
-    }
+    obs.disconnect();
+    new IntersectionObserver(e=>{ if(e[0].isIntersecting) more(); },{rootMargin:'3000px',threshold:.01})
+      .observe(document.getElementById('end-loader'));
 
-    observer.disconnect();
-    const newObserver = new IntersectionObserver(entries => {
-      if(entries[0].isIntersecting) loadMore();
-    }, { rootMargin:'3000px', threshold:0.01 });
-    newObserver.observe(document.getElementById('end-loader'));
+    const init=[];
+    for(let i=0;i<6;i++) data.forEach(p=>init.push({...p,id:`i${i}-${p.id}`}));
+    displayPhotos=init; buildGrid(displayPhotos);
 
-    // 初始批次
-    const initialBuffer = [];
-    for(let i=0;i<6;i++){
-      PHOTO_DATA.forEach(p => initialBuffer.push({
-        ...p, id:`init-${i}-${p.id}`
-      }));
-    }
-    displayPhotos = initialBuffer;
-    buildGrid(displayPhotos);
-
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
   }
 
   init();
-
 })();
 </script>
 </body>
