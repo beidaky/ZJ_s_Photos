@@ -1,447 +1,675 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Muse Gallery | Sakura Dream</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fff9fa">
+  <title>ZJ's Photo | 相册</title>
+
+  <!-- 不再依赖 Tailwind / Google Fonts，减少首次访问的额外网络请求 -->
+  <link rel="preload" as="image" href="./images/p01.jpg" fetchpriority="high">
+  <link rel="preload" as="image" href="./images/p02.jpg" fetchpriority="high">
+
   <style>
     :root {
-      --bg-color: #fff9fa;
-      --text-color: #4a4a4a;
-      --accent-soft: #fce4ec;
-      --accent-main: #f06292;
-      --card-bg: #ffffff;
+      --bg: #fff9fa;
+      --text: #4a4a4a;
+      --accent: #f06292;
+      --soft: #fce4ec;
+      --card: #fff;
+      --glass: rgba(255,255,255,.78);
+      --line: rgba(240,98,146,.18);
     }
-    [data-theme='dark'] {
-      --bg-color: #120f10;
-      --text-color: #fce4ec;
-      --accent-soft: #2a1b1f;
-      --accent-main: #ff80ab;
-      --card-bg: #1a1617;
+    [data-theme="dark"] {
+      --bg: #120f10;
+      --text: #fce4ec;
+      --accent: #ff80ab;
+      --soft: #2a1b1f;
+      --card: #1a1617;
+      --glass: rgba(18,15,16,.78);
+      --line: rgba(255,128,171,.18);
     }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
     body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0; overflow-x: hidden;
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
       -webkit-font-smoothing: antialiased;
-      transition: background-color 0.5s ease, color 0.5s ease;
-      font-family: 'Cormorant Garamond', Georgia, serif;
+      text-rendering: optimizeLegibility;
+      transition: background-color .22s ease, color .22s ease;
     }
-    ::-webkit-scrollbar { display: none; }
-    body { -ms-overflow-style: none; scrollbar-width: none; }
+    button { font: inherit; }
+    ::-webkit-scrollbar { width: 0; height: 0; }
+    * { scrollbar-width: none; }
 
-    #bg-canvas {
-      position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: -1; pointer-events: none;
+    /* 极轻的背景装饰：不再使用全屏 canvas + 每帧粒子 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background:
+        radial-gradient(circle at 50% -10%, rgba(240,98,146,.08), transparent 38%),
+        radial-gradient(circle at 100% 60%, rgba(240,98,146,.035), transparent 35%);
     }
-    .glass-btn {
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(240,98,146,0.2);
+
+    #loading {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      color: rgba(240,98,146,.65);
+      letter-spacing: .18em;
+      font-size: 12px;
     }
-    [data-theme='dark'] .glass-btn { background: rgba(0,0,0,0.2); }
+    .loading-inner { text-align:center; }
+    .loading-ring {
+      width: 28px;
+      height: 28px;
+      margin: 0 auto 16px;
+      border: 2px solid rgba(240,98,146,.14);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    @keyframes floating { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-    .animate-float { animation: floating 3s ease-in-out infinite; }
-    @keyframes spin { to{transform:rotate(360deg)} }
-    .animate-spin { animation: spin 1s linear infinite; }
-    @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
-    .animate-pulse { animation: pulse 2s ease-in-out infinite; }
-    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-    .animate-bounce { animation: bounce 1s ease-in-out infinite; }
+    #app {
+      opacity: 0;
+      transition: opacity .35s ease;
+    }
+    #app.ready { opacity: 1; }
 
-    /* ── 照片卡片 ── */
+    main {
+      width: min(1500px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 54px 0 100px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    h1 {
+      margin: 0;
+      color: rgba(240,98,146,.82);
+      font-size: clamp(28px, 5vw, 54px);
+      line-height: 1.15;
+      font-style: italic;
+      font-weight: 400;
+      letter-spacing: .12em;
+    }
+    .divider {
+      width: 58px;
+      height: 1px;
+      margin: 16px auto 0;
+      background: linear-gradient(90deg, transparent, rgba(240,98,146,.45), transparent);
+    }
+
+    /* 单一 DOM 瀑布流：原版同时创建 desktop/mobile 两套卡片，这里只创建一套 */
+    .gallery {
+      column-count: 4;
+      column-gap: 24px;
+    }
     .photo-card {
-      position: relative; cursor: pointer; overflow: hidden;
-      border-radius: 2.5rem; background: var(--card-bg);
-      transition: all 1s cubic-bezier(0.19,1,0.22,1);
-      border: 2px solid transparent;
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      margin: 0 0 24px;
+      overflow: hidden;
+      break-inside: avoid;
+      border-radius: 22px;
+      background: var(--card);
+      cursor: pointer;
+      transform: translateZ(0);
+      contain: paint;
+      box-shadow: 0 8px 30px rgba(0,0,0,.035);
+      transition: transform .22s ease, box-shadow .22s ease;
     }
-    .photo-card:hover { box-shadow: 0 40px 80px -15px rgba(240,98,146,0.2); border-color: rgba(252,228,236,0.3); }
-    .photo-card:active { transform: scale(0.98); }
-    .photo-card .overlay { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .7s;background:rgba(0,0,0,.05);pointer-events:none; }
-    .photo-card:hover .overlay { opacity: 1; }
-    .overlay-star { color:white;font-size:1.875rem;font-weight:300;transform:scale(0);transition:transform .7s .1s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5)); }
-    .photo-card:hover .overlay-star { transform: scale(1); }
-    .photo-card img { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1s ease,transform 1s ease; }
-    .photo-card:hover img { transform: scale(1.1); }
+    .photo-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(240,98,146,.12);
+    }
+    .photo-card:active { transform: scale(.985); }
+
+    .photo-card img {
+      display: block;
+      width: 100%;
+      height: auto;
+      opacity: 0;
+      background: linear-gradient(135deg, var(--soft), var(--bg));
+      transition: opacity .25s ease;
+    }
     .photo-card img.loaded { opacity: 1; }
-    .skeleton { position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-soft),var(--bg-color)); }
 
-    /* ── Lightbox ── */
-    #lightbox { position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .7s cubic-bezier(0.19,1,0.22,1); }
-    #lightbox.open { opacity:1;pointer-events:auto; }
-    #lightbox-backdrop { position:absolute;inset:0;backdrop-filter:blur(24px); }
-    [data-theme='light'] #lightbox-backdrop { background:rgba(255,249,250,.85); }
-    [data-theme='dark']  #lightbox-backdrop { background:rgba(18,15,16,.85); }
-    #lightbox-content { position:relative;max-width:85vw;max-height:85vh;transform:scale(.95) translateY(10px);opacity:0;transition:all 1s cubic-bezier(0.19,1,0.22,1); }
-    #lightbox.open #lightbox-content { transform:scale(1) translateY(0);opacity:1; }
-    #lightbox-img { max-width:100%;max-height:85vh;object-fit:contain;border-radius:2.5rem;box-shadow:0 50px 100px rgba(0,0,0,.3);border:4px solid var(--card-bg); }
-    #lightbox-caption { position:absolute;bottom:-4rem;left:0;width:100%;text-align:center;color:rgba(240,98,146,.4);font-size:10px;font-weight:500;letter-spacing:.5em;text-transform:uppercase; }
-    #lightbox-close { position:absolute;top:2rem;right:2rem;color:rgba(240,98,146,.5);cursor:pointer;transition:all .5s;z-index:10;background:none;border:none;padding:.5rem; }
-    #lightbox-close:hover { color:#f06292;transform:rotate(90deg); }
-
-    /* ── Loading ── */
-    #loading { display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;color:rgba(240,98,146,.6);font-weight:500;letter-spacing:.2em;text-transform:uppercase; }
-    #app { display:none; }
-
-    /* ── 控制按钮 ── */
-    #controls { position:fixed;bottom:2rem;right:2rem;z-index:40;display:flex;flex-direction:column;gap:1rem; }
-    .ctrl-btn { padding:1.25rem;border-radius:50%;cursor:pointer;transition:all .7s;box-shadow:0 20px 40px rgba(0,0,0,.1);border:none;outline:none;display:flex;align-items:center;justify-content:center; }
-    .ctrl-btn:hover { transform:scale(1.1); }
-    .ctrl-btn:active { transform:scale(.95); }
-    .ctrl-btn.active { transform:scale(1.1);border-color:rgba(240,98,146,.6)!important;background:rgba(240,98,146,.08)!important; }
-
-    /* ── 音乐播放器 ── */
-    #music-panel {
-      position:fixed;bottom:2rem;left:2rem;z-index:40;
-      background:rgba(255,255,255,.12);backdrop-filter:blur(16px);
-      border:1px solid rgba(240,98,146,.2);border-radius:1.5rem;
-      padding:.875rem 1.25rem .875rem 1rem;
-      display:none;align-items:center;gap:.75rem;
-      min-width:200px;box-shadow:0 20px 40px rgba(0,0,0,.1);
-      transition:opacity .5s; overflow:hidden;
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      min-height: 160px;
+      background: linear-gradient(135deg, var(--soft), var(--bg));
+      animation: breathe 1.8s ease-in-out infinite alternate;
     }
-    [data-theme='dark'] #music-panel { background:rgba(0,0,0,.25); }
-    #music-panel.visible { display:flex; }
-    #music-track-name { font-size:11px;letter-spacing:.12em;color:rgba(240,98,146,.75);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;flex:1; }
-    #music-progress-wrap { position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(240,98,146,.1);overflow:hidden; }
-    #music-progress-bar { height:100%;width:0%;background:linear-gradient(to right,#f06292,#ff80ab);transition:width 1s linear; }
-    #btn-music-play { background:none;border:none;cursor:pointer;color:#f06292;padding:0;display:flex;align-items:center;justify-content:center;transition:transform .3s;flex-shrink:0; }
-    #btn-music-play:hover { transform:scale(1.15); }
+    .photo-card.done .placeholder { display: none; }
+    @keyframes breathe { from { opacity:.65 } to { opacity:1 } }
 
-    /* ── 瀑布流 ── */
-    .masonry-desktop { display:none;gap:2.5rem;width:100%;max-width:1500px; }
-    .masonry-mobile  { display:flex;gap:1.25rem;width:100%; }
-    @media(min-width:768px){ .masonry-desktop{display:flex} .masonry-mobile{display:none} }
-    .masonry-col        { display:flex;flex-direction:column;flex:1;gap:2.5rem; }
-    .masonry-col-mobile { display:flex;flex-direction:column;flex:1;gap:1.25rem; }
-    .divider { width:4rem;height:1px;background:linear-gradient(to right,transparent,rgba(240,98,146,.4),transparent);margin:1rem auto 0; }
-    #end-loader { height:40vh;width:100%;display:flex;align-items:center;justify-content:center; }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      background: rgba(0,0,0,.05);
+      pointer-events: none;
+      transition: opacity .18s ease;
+    }
+    .photo-card:hover .overlay { opacity: 1; }
+    .overlay span {
+      color: white;
+      font-size: 30px;
+      text-shadow: 0 3px 12px rgba(0,0,0,.45);
+    }
+
+    #controls {
+      position: fixed;
+      right: max(18px, env(safe-area-inset-right));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ctrl-btn, #btn-music-play {
+      border: 1px solid var(--line);
+      outline: none;
+      color: var(--accent);
+      background: var(--glass);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 25px rgba(0,0,0,.08);
+      cursor: pointer;
+    }
+    .ctrl-btn {
+      width: 50px;
+      height: 50px;
+      padding: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      transition: transform .16s ease, background-color .16s ease;
+    }
+    .ctrl-btn:hover { transform: scale(1.06); }
+    .ctrl-btn:active { transform: scale(.94); }
+    .ctrl-btn.active { background: rgba(240,98,146,.12); }
+
+    .ctrl-btn svg { width: 22px; height: 22px; }
+
+    #music-panel {
+      position: fixed;
+      left: max(16px, env(safe-area-inset-left));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      z-index: 40;
+      min-width: 205px;
+      max-width: calc(100vw - 90px);
+      padding: 10px 13px 10px 11px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--glass);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 25px rgba(0,0,0,.08);
+    }
+    #btn-music-play {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    #music-track-name {
+      max-width: 145px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 11px;
+      letter-spacing: .1em;
+      color: rgba(240,98,146,.8);
+      text-transform: uppercase;
+    }
+    #music-progress-wrap {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 4px;
+      height: 1px;
+      overflow: hidden;
+      background: rgba(240,98,146,.1);
+    }
+    #music-progress-bar {
+      width: 0;
+      height: 100%;
+      background: var(--accent);
+    }
+
+    /* Lightbox：只在打开时启用模糊，避免平时一直消耗合成性能 */
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      background: rgba(255,249,250,.94);
+      transition: opacity .2s ease, visibility .2s ease;
+    }
+    [data-theme="dark"] #lightbox { background: rgba(18,15,16,.94); }
+    #lightbox.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    #lightbox-content {
+      position: relative;
+      max-width: 94vw;
+      max-height: 90svh;
+      transform: scale(.97);
+      transition: transform .2s ease;
+    }
+    #lightbox.open #lightbox-content { transform: scale(1); }
+    #lightbox-img {
+      display: block;
+      max-width: 94vw;
+      max-height: 84svh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 18px;
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity .16s ease, transform .16s ease;
+      box-shadow: 0 25px 70px rgba(0,0,0,.25);
+      background: var(--card);
+    }
+    #lightbox-prev, #lightbox-next {
+      position: fixed;
+      top: 50%;
+      z-index: 101;
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: var(--accent);
+      background: var(--glass);
+      cursor: pointer;
+      transform: translateY(-50%);
+      font-size: 34px;
+      line-height: 1;
+    }
+    #lightbox-prev { left: max(14px, env(safe-area-inset-left)); }
+    #lightbox-next { right: max(14px, env(safe-area-inset-right)); }
+    #lightbox-prev:active, #lightbox-next:active { transform: translateY(-50%) scale(.92); }
+
+    #lightbox-close {
+      position: fixed;
+      top: max(16px, env(safe-area-inset-top));
+      right: max(16px, env(safe-area-inset-right));
+      z-index: 101;
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: var(--accent);
+      background: var(--glass);
+      cursor: pointer;
+    }
+    #lightbox-caption {
+      margin-top: 12px;
+      text-align: center;
+      color: rgba(240,98,146,.65);
+      font: 11px/1.4 Georgia, serif;
+      letter-spacing: .18em;
+    }
+
+    @media (max-width: 1000px) {
+      .gallery { column-count: 3; column-gap: 18px; }
+      .photo-card { margin-bottom: 18px; }
+    }
+    @media (max-width: 700px) {
+      #lightbox-prev, #lightbox-next {
+        width: 42px;
+        height: 42px;
+        font-size: 29px;
+      }
+      main { width: calc(100% - 18px); padding-top: 38px; }
+      header { margin-bottom: 30px; }
+      h1 { font-size: clamp(26px, 8vw, 38px); letter-spacing: .08em; }
+      .gallery { column-count: 2; column-gap: 12px; }
+      .photo-card { margin-bottom: 12px; border-radius: 16px; }
+      #controls { gap: 8px; }
+      .ctrl-btn { width: 46px; height: 46px; }
+      #music-panel { min-width: 170px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+      }
+    }
   </style>
 </head>
-<body>
-  <canvas id="bg-canvas"></canvas>
 
+<body>
   <div id="loading">
-    <div style="position:relative;margin-bottom:1.5rem;">
-      <div style="width:3rem;height:3rem;border:4px solid rgba(240,98,146,0.1);border-top-color:#f06292;border-radius:50%;" class="animate-spin"></div>
+    <div class="loading-inner">
+      <div class="loading-ring"></div>
+      <div>正在打开相册</div>
     </div>
-    Curating Dreamscape
   </div>
 
   <div id="app">
-    <main style="max-width:none;padding:3rem 1rem 5rem;">
-      <header class="animate-float" style="margin-bottom:4rem;text-align:center;position:relative;">
-        <h1 style="font-size:clamp(1.8rem,5vw,3.5rem);font-style:italic;color:rgba(240,98,146,0.8);letter-spacing:0.25em;font-weight:300;margin:0;">
-          ZJ's Photo | 相册
-        </h1>
+    <main>
+      <header>
+        <h1>ZJ's Photo | 相册</h1>
         <div class="divider"></div>
       </header>
-      <div style="display:flex;justify-content:center;">
-        <div class="masonry-desktop" id="grid-desktop"></div>
-        <div class="masonry-mobile"  id="grid-mobile"></div>
-      </div>
-      <div id="end-loader">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;opacity:0.3;">
-          <div style="width:0.375rem;height:0.375rem;background:#f06292;border-radius:50%;" class="animate-bounce"></div>
-        </div>
-      </div>
+
+      <section class="gallery" id="gallery" aria-label="照片墙"></section>
     </main>
   </div>
 
-  <!-- 右下角控制按钮 -->
   <div id="controls">
-    <button id="btn-theme" class="ctrl-btn glass-btn" title="Toggle Theme">
-      <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" style="width:1.5rem;height:1.5rem;color:#f06292;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+    <button id="btn-theme" class="ctrl-btn" type="button" aria-label="切换深色模式" title="切换深色模式">
+      <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M20.35 15.35A9 9 0 0 1 8.65 3.65 9 9 0 1 0 20.35 15.35Z"/>
       </svg>
-      <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" style="width:1.5rem;height:1.5rem;color:#f06292;display:none;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+      <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:none">
+        <circle cx="12" cy="12" r="4"/>
+        <path stroke-linecap="round" d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M19.07 4.93l-1.41 1.41M6.34 17.66l-1.41 1.41"/>
       </svg>
     </button>
-    <button id="btn-scroll" class="ctrl-btn glass-btn" title="Auto Scroll">
-      <svg id="icon-scroll-off" xmlns="http://www.w3.org/2000/svg" style="width:1.5rem;height:1.5rem;color:rgba(240,98,146,0.6);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 13l-7 7-7-7m14-8l-7 7-7-7"/>
+
+    <button id="btn-scroll" class="ctrl-btn" type="button" aria-label="自动滚动" title="自动滚动">
+      <svg id="icon-scroll-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m19 13-7 7-7-7m14-8-7 7-7-7"/>
       </svg>
-      <svg id="icon-scroll-on" xmlns="http://www.w3.org/2000/svg" style="width:1.5rem;height:1.5rem;color:#f06292;display:none;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 9v6m4-6v6"/>
+      <svg id="icon-scroll-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:none">
+        <path stroke-linecap="round" d="M10 8v8M14 8v8"/>
       </svg>
     </button>
   </div>
 
-  <!-- 左下角音乐播放器（有音乐才显示） -->
-  <div id="music-panel">
-    <button id="btn-music-play" title="Play / Pause">
-      <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" style="width:1.4rem;height:1.4rem;" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M8 5v14l11-7z"/>
-      </svg>
-      <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" style="width:1.4rem;height:1.4rem;display:none;" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M6 19h4V5H6zm8-14v14h4V5z"/>
-      </svg>
+  <div id="music-panel" aria-label="背景音乐">
+    <button id="btn-music-play" type="button" aria-label="播放或暂停音乐">
+      <svg id="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></svg>
     </button>
-    <div id="music-track-name">♪</div>
+    <div id="music-track-name">♪ bgm</div>
     <div id="music-progress-wrap"><div id="music-progress-bar"></div></div>
   </div>
 
-  <!-- Lightbox -->
-  <div id="lightbox">
-    <div id="lightbox-backdrop"></div>
-    <button id="lightbox-close">
-      <svg xmlns="http://www.w3.org/2000/svg" style="width:2.5rem;height:2.5rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"/>
-      </svg>
-    </button>
+  <div id="lightbox" aria-hidden="true">
+    <button id="lightbox-prev" type="button" aria-label="上一张">‹</button>
+    <button id="lightbox-next" type="button" aria-label="下一张">›</button>
+    <button id="lightbox-close" type="button" aria-label="关闭照片">✕</button>
     <div id="lightbox-content">
       <img id="lightbox-img" src="" alt="">
       <div id="lightbox-caption"></div>
     </div>
   </div>
 
-<script>
-(function(){
+  <script>
+  (() => {
+    "use strict";
 
-  // ════════════════════════════════════════════════
-  //  ★ 配置区 — 只需关注这里
-  // ════════════════════════════════════════════════
-
-  const MAX_PHOTOS   = 50;                            // 最多支持50张
-  const PHOTO_FORMATS = ['jpg','jpeg','png','webp'];  // 支持的图片格式
-
-  // 音乐文件：把音乐放到仓库的 music/ 文件夹
-  // 代码会按顺序尝试，找到第一个存在的就用
-  // 如果你的文件名不在这里，直接加一行 'xxx.mp3' 就好
-  const MUSIC_CANDIDATES = [
-    './music/bgm.mp3','./music/bgm.ogg','./music/bgm.wav',
-    './music/music.mp3','./music/music.ogg','./music/music.wav',
-    './music/background.mp3','./music/background.ogg',
-  ];
-
-  // ════════════════════════════════════════════════
-  //  图片自动检测
-  //  命名规则：p01.jpg, p02.jpg ... p50.jpg
-  //  也支持：p1.jpg, p2.jpg（不带前导零也可以）
-  //  也支持：.jpeg .png .webp 格式
-  // ════════════════════════════════════════════════
-
-  function probeImage(url) {
-    return new Promise(resolve => {
-      const img = new Image();
-      img.onload  = () => resolve({ ok:true, w:img.naturalWidth, h:img.naturalHeight });
-      img.onerror = () => resolve({ ok:false });
-      img.src = url;
-    });
-  }
-
-  async function findPhoto(i) {
-    const pad  = String(i).padStart(2,'0');
-    const bare = String(i);
-    const candidates = [];
-    for(const fmt of PHOTO_FORMATS){
-      candidates.push(`./images/p${pad}.${fmt}`);
-      candidates.push(`./images/p${bare}.${fmt}`);
-    }
-    for(const url of candidates){
-      const r = await probeImage(url);
-      if(r.ok) return { id:String(i), filename:url.split('/').pop(), width:r.w, height:r.h, url };
-    }
-    return null;
-  }
-
-  async function loadPhotoData() {
-    const results = await Promise.all(
-      Array.from({length:MAX_PHOTOS},(_,k)=>findPhoto(k+1))
+    /*
+      项目结构保持不变：
+      images/p01.jpg ... images/p20.jpg
+      music/bgm.mp3
+    */
+    const PHOTO_COUNT = 20;
+    const photos = Array.from(
+      { length: PHOTO_COUNT },
+      (_, i) => `./images/p${String(i + 1).padStart(2, "0")}.jpg`
     );
-    return results.filter(Boolean);
-  }
 
-  // ════════════════════════════════════════════════
-  //  音乐播放器
-  // ════════════════════════════════════════════════
+    const $ = id => document.getElementById(id);
+    const gallery = $("gallery");
+    const loading = $("loading");
+    const app = $("app");
 
-  const audio        = new Audio();
-  audio.loop         = true;
-  const musicPanel   = document.getElementById('music-panel');
-  const trackName    = document.getElementById('music-track-name');
-  const btnPlay      = document.getElementById('btn-music-play');
-  const iconPlay     = document.getElementById('icon-play');
-  const iconPause    = document.getElementById('icon-pause');
-  const progressBar  = document.getElementById('music-progress-bar');
-  let musicReady     = false;
+    // ---------- 图片 ----------
+    const observer = "IntersectionObserver" in window
+      ? new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const img = entry.target;
+            img.src = img.dataset.src;
+            observer.unobserve(img);
+          });
+        }, { rootMargin: "500px 0px" })
+      : null;
 
-  async function detectMusic() {
-    for(const url of MUSIC_CANDIDATES){
-      const ok = await new Promise(res=>{
-        const t=new Audio();
-        t.oncanplaythrough=()=>res(true);
-        t.onerror=()=>res(false);
-        t.src=url;
-      });
-      if(ok){
-        audio.src = url;
-        const name = url.split('/').pop().replace(/\.[^.]+$/,'').replace(/[-_]/g,' ');
-        trackName.textContent = '♪  ' + name;
-        musicPanel.classList.add('visible');
-        musicReady = true;
-        return;
+    function createCard(src, index) {
+      const card = document.createElement("article");
+      card.className = "photo-card";
+
+      const placeholder = document.createElement("div");
+      placeholder.className = "placeholder";
+
+      const img = document.createElement("img");
+      img.alt = `照片 ${index + 1}`;
+      img.decoding = "async";
+      img.dataset.src = src;
+
+      // 首屏前两张直接加载，其余交给 IntersectionObserver。
+      if (index < 2) {
+        img.src = src;
+        img.fetchPriority = "high";
+      } else if (observer) {
+        observer.observe(img);
+      } else {
+        img.src = src;
+      }
+
+      img.addEventListener("load", () => {
+        img.classList.add("loaded");
+        card.classList.add("done");
+      }, { once: true });
+
+      img.addEventListener("error", () => {
+        card.classList.add("done");
+        placeholder.style.display = "none";
+      }, { once: true });
+
+      const overlay = document.createElement("div");
+      overlay.className = "overlay";
+      overlay.innerHTML = "<span>✧</span>";
+
+      card.append(placeholder, img, overlay);
+      card.addEventListener("click", () => openLightbox(src, index));
+      return card;
+    }
+
+    // 只创建 20 张卡片，不再复制成 120 张，也不再同时创建 desktop/mobile 两套。
+    photos.forEach((src, i) => gallery.appendChild(createCard(src, i)));
+
+    // ---------- Lightbox ----------
+    const lightbox = $("lightbox");
+    const lightboxImg = $("lightbox-img");
+    const lightboxCaption = $("lightbox-caption");
+
+    let currentPhoto = 0;
+
+    function showPhoto(index, animate = true) {
+      currentPhoto = (index + photos.length) % photos.length;
+      const src = photos[currentPhoto];
+      if (animate) {
+        lightboxImg.style.opacity = "0";
+        lightboxImg.style.transform = "scale(.985)";
+        requestAnimationFrame(() => {
+          lightboxImg.src = src;
+          lightboxImg.alt = `照片 ${currentPhoto + 1}`;
+          lightboxCaption.textContent = `${String(currentPhoto + 1).padStart(2, "0")}  /  ${String(photos.length).padStart(2, "0")}`;
+          lightboxImg.onload = () => {
+            lightboxImg.style.opacity = "1";
+            lightboxImg.style.transform = "scale(1)";
+          };
+        });
+      } else {
+        lightboxImg.src = src;
+        lightboxImg.alt = `照片 ${currentPhoto + 1}`;
+        lightboxCaption.textContent = `${String(currentPhoto + 1).padStart(2, "0")}  /  ${String(photos.length).padStart(2, "0")}`;
       }
     }
-  }
 
-  audio.addEventListener('timeupdate',()=>{
-    if(!audio.duration) return;
-    progressBar.style.width = (audio.currentTime/audio.duration*100)+'%';
-  });
-
-  btnPlay.addEventListener('click',()=>{
-    if(!musicReady) return;
-    if(audio.paused){
-      audio.play();
-      iconPlay.style.display='none'; iconPause.style.display='';
-    } else {
-      audio.pause();
-      iconPlay.style.display=''; iconPause.style.display='none';
+    function openLightbox(src, index) {
+      showPhoto(index, false);
+      lightbox.classList.add("open");
+      lightbox.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
     }
-  });
 
-  // ════════════════════════════════════════════════
-  //  Sparkle 粒子
-  // ════════════════════════════════════════════════
+    function closeLightbox() {
+      lightbox.classList.remove("open");
+      lightbox.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
 
-  let theme = 'light';
-  const canvas = document.getElementById('bg-canvas');
-  const ctx    = canvas.getContext('2d');
-  let particles=[], cw=canvas.width=innerWidth, ch=canvas.height=innerHeight;
-  window.addEventListener('resize',()=>{ cw=canvas.width=innerWidth; ch=canvas.height=innerHeight; });
-  window.addEventListener('mousemove',e=>{
-    for(let i=0;i<3;i++){
-      const h=340+Math.random()*20, s=Math.random()*4+1;
-      particles.push({x:e.clientX,y:e.clientY,vx:(Math.random()-.5)*2,vy:(Math.random()-.5)*2,life:1,size:s,
-        color:theme==='light'?`hsla(${h},100%,80%,`:`hsla(${h},80%,60%,`});
+    $("lightbox-close").addEventListener("click", closeLightbox);
+    $("lightbox-prev").addEventListener("click", () => showPhoto(currentPhoto - 1));
+    $("lightbox-next").addEventListener("click", () => showPhoto(currentPhoto + 1));
+
+    let touchStartX = 0;
+    lightbox.addEventListener("touchstart", e => {
+      touchStartX = e.changedTouches[0].clientX;
+    }, { passive: true });
+    lightbox.addEventListener("touchend", e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 45) {
+        showPhoto(currentPhoto + (dx < 0 ? 1 : -1));
+      }
+    }, { passive: true });
+
+    lightbox.addEventListener("click", e => {
+      if (e.target === lightbox) closeLightbox();
+    });
+    window.addEventListener("keydown", e => {
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") showPhoto(currentPhoto - 1);
+      if (e.key === "ArrowRight") showPhoto(currentPhoto + 1);
+    });
+
+    // ---------- 深色 / 浅色 ----------
+    const html = document.documentElement;
+    const themeBtn = $("btn-theme");
+    const moon = $("icon-moon");
+    const sun = $("icon-sun");
+
+    function setTheme(theme) {
+      html.dataset.theme = theme;
+      const dark = theme === "dark";
+      moon.style.display = dark ? "none" : "";
+      sun.style.display = dark ? "" : "none";
+      document.querySelector('meta[name="theme-color"]').setAttribute(
+        "content", dark ? "#120f10" : "#fff9fa"
+      );
+      try { localStorage.setItem("photo-theme", theme); } catch (_) {}
     }
-  });
-  (function loop(){
-    ctx.clearRect(0,0,cw,ch);
-    for(let i=0;i<particles.length;i++){
-      const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.life-=.008;
-      ctx.fillStyle=p.color+p.life+')';
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
-      if(p.life<=0){particles.splice(i,1);i--;}
+
+    let savedTheme = null;
+    try { savedTheme = localStorage.getItem("photo-theme"); } catch (_) {}
+    setTheme(savedTheme === "dark" ? "dark" : "light");
+
+    themeBtn.addEventListener("click", () => {
+      setTheme(html.dataset.theme === "dark" ? "light" : "dark");
+    });
+
+    // ---------- 音乐 ----------
+    // 不再为了“检测音乐”而逐个等待多个不存在的文件。
+    // 直接使用项目结构中的 music/bgm.mp3。
+    const audio = new Audio("./music/bgm.mp3");
+    audio.loop = true;
+    audio.preload = "metadata";
+
+    const playBtn = $("btn-music-play");
+    const playIcon = $("icon-play");
+    const pauseIcon = $("icon-pause");
+    const progress = $("music-progress-bar");
+
+    playBtn.addEventListener("click", async () => {
+      try {
+        if (audio.paused) {
+          await audio.play();
+          playIcon.style.display = "none";
+          pauseIcon.style.display = "";
+        } else {
+          audio.pause();
+          playIcon.style.display = "";
+          pauseIcon.style.display = "none";
+        }
+      } catch (_) {
+        // 浏览器若阻止播放，不阻塞页面其它功能。
+      }
+    });
+
+    audio.addEventListener("timeupdate", () => {
+      if (audio.duration) {
+        progress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+      }
+    });
+
+    audio.addEventListener("pause", () => {
+      playIcon.style.display = "";
+      pauseIcon.style.display = "none";
+    });
+
+    // ---------- 自动滚动 ----------
+    // 原版每一帧都 scrollBy，会持续制造滚动任务。
+    // 这里降低调用频率，让手指自由滑动更容易保持流畅。
+    let autoScroll = false;
+    let scrollTimer = null;
+
+    function scrollStep() {
+      if (!autoScroll) return;
+      window.scrollBy(0, 1);
+      scrollTimer = setTimeout(scrollStep, 24);
     }
-    requestAnimationFrame(loop);
+
+    $("btn-scroll").addEventListener("click", () => {
+      autoScroll = !autoScroll;
+      $("btn-scroll").classList.toggle("active", autoScroll);
+      $("icon-scroll-off").style.display = autoScroll ? "none" : "";
+      $("icon-scroll-on").style.display = autoScroll ? "" : "none";
+
+      if (autoScroll) {
+        clearTimeout(scrollTimer);
+        scrollStep();
+      } else {
+        clearTimeout(scrollTimer);
+      }
+    });
+
+    // 页面本身不再等待全部图片/音乐下载完成才显示。
+    // HTML 建好即可进入相册，图片按需加载。
+    requestAnimationFrame(() => {
+      loading.style.display = "none";
+      app.classList.add("ready");
+    });
   })();
-
-  // ════════════════════════════════════════════════
-  //  主题 / 滚动 按钮
-  // ════════════════════════════════════════════════
-
-  const htmlEl=document.documentElement;
-  document.getElementById('btn-theme').addEventListener('click',()=>{
-    theme=theme==='light'?'dark':'light';
-    htmlEl.setAttribute('data-theme',theme);
-    document.getElementById('icon-moon').style.display=theme==='light'?'':'none';
-    document.getElementById('icon-sun').style.display =theme==='light'?'none':'';
-  });
-
-  let isScrolling=false, scrollId=null;
-  document.getElementById('btn-scroll').addEventListener('click',()=>{
-    isScrolling=!isScrolling;
-    document.getElementById('btn-scroll').classList.toggle('active',isScrolling);
-    document.getElementById('icon-scroll-off').style.display=isScrolling?'none':'';
-    document.getElementById('icon-scroll-on').style.display =isScrolling?'':'none';
-    if(isScrolling){
-      (function s(){ window.scrollBy({top:1.0,behavior:'auto'}); // ← 滚动速度，改小更慢
-        scrollId=requestAnimationFrame(s); })();
-    } else { cancelAnimationFrame(scrollId); }
-  });
-
-  // ════════════════════════════════════════════════
-  //  瀑布流 & 卡片
-  // ════════════════════════════════════════════════
-
-  function distribute(items,cols){
-    const c=Array.from({length:cols},()=>[]), h=new Array(cols).fill(0);
-    items.forEach(p=>{ let s=0; for(let i=1;i<cols;i++) if(h[i]<h[s]) s=i; c[s].push(p); h[s]+=p.height/p.width; });
-    return c;
-  }
-
-  function makeCard(photo){
-    const card=document.createElement('div'); card.className='photo-card';
-    const inner=document.createElement('div');
-    inner.style.cssText=`padding-bottom:${photo.height/photo.width*100}%;position:relative;width:100%;`;
-    const sk=document.createElement('div'); sk.className='skeleton animate-pulse';
-    const img=document.createElement('img'); img.src=photo.url; img.alt=photo.filename; img.loading='lazy';
-    img.addEventListener('load',()=>img.classList.add('loaded'));
-    const ov=document.createElement('div'); ov.className='overlay';
-    const st=document.createElement('span'); st.className='overlay-star'; st.textContent='✧'; ov.appendChild(st);
-    inner.appendChild(sk); inner.appendChild(img); card.appendChild(inner); card.appendChild(ov);
-    card.addEventListener('click',()=>openLightbox(photo));
-    return card;
-  }
-
-  function buildGrid(items){
-    const dg=document.getElementById('grid-desktop'), mg=document.getElementById('grid-mobile');
-    [dg,mg].forEach(g=>g.innerHTML='');
-    distribute(items,4).forEach(col=>{ const el=document.createElement('div'); el.className='masonry-col'; col.forEach(p=>el.appendChild(makeCard(p))); dg.appendChild(el); });
-    distribute(items,2).forEach(col=>{ const el=document.createElement('div'); el.className='masonry-col-mobile'; col.forEach(p=>el.appendChild(makeCard(p))); mg.appendChild(el); });
-  }
-
-  // ════════════════════════════════════════════════
-  //  Lightbox
-  // ════════════════════════════════════════════════
-
-  const lb=document.getElementById('lightbox');
-  function openLightbox(p){
-    document.getElementById('lightbox-img').src=p.url;
-    document.getElementById('lightbox-caption').textContent=`Captured Muse · ${p.filename}`;
-    document.body.style.overflow='hidden'; lb.classList.add('open');
-  }
-  function closeLightbox(){ lb.classList.remove('open'); document.body.style.overflow=''; }
-  document.getElementById('lightbox-close').addEventListener('click',closeLightbox);
-  document.getElementById('lightbox-backdrop').addEventListener('click',closeLightbox);
-  window.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLightbox(); });
-
-  // ════════════════════════════════════════════════
-  //  初始化
-  // ════════════════════════════════════════════════
-
-  let displayPhotos=[], batch=0;
-  const obs=new IntersectionObserver(()=>{},{});
-  obs.observe(document.getElementById('end-loader'));
-
-  async function init(){
-    const [photos] = await Promise.all([loadPhotoData(), detectMusic()]);
-
-    let data = photos.length ? photos : [
-      {id:'1',width:800,height:1200},{id:'2',width:1200,height:800},
-      {id:'3',width:800,height:1000},{id:'4',width:1000,height:800},
-      {id:'5',width:800,height:800}, {id:'6',width:900,height:1300},
-      {id:'7',width:1400,height:900},{id:'8',width:800,height:1100}
-    ].map(p=>({...p,filename:`photo${p.id}.jpg`,url:`https://picsum.photos/seed/${p.id}/${p.width}/${p.height}`}));
-
-    function more(){
-      const b=[];
-      for(let i=0;i<3;i++) data.forEach(p=>b.push({...p,id:`b${batch}-${i}-${p.id}`}));
-      batch++; displayPhotos=displayPhotos.concat(b); buildGrid(displayPhotos);
-    }
-
-    obs.disconnect();
-    new IntersectionObserver(e=>{ if(e[0].isIntersecting) more(); },{rootMargin:'3000px',threshold:.01})
-      .observe(document.getElementById('end-loader'));
-
-    const init=[];
-    for(let i=0;i<6;i++) data.forEach(p=>init.push({...p,id:`i${i}-${p.id}`}));
-    displayPhotos=init; buildGrid(displayPhotos);
-
-    document.getElementById('loading').style.display='none';
-    document.getElementById('app').style.display='block';
-  }
-
-  init();
-})();
-</script>
+  </script>
 </body>
 </html>
