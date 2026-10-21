@@ -1,675 +1,242 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#fff9fa">
-  <title>ZJ's Photo | 相册</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Muse Gallery | Sakura Dream</title>
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<!-- 字体非阻塞加载：Google Fonts 在国内加载不出来也不会拖慢页面 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" media="print" onload="this.media='all'">
+<style>
+:root{--bg:#fff9fa;--text:#4a4a4a;--soft:#fce4ec;--main:#f06292;--card:#fff;--panel:rgba(255,255,255,.86);--lb:rgba(255,249,250,.95);--gap:clamp(.75rem,2.2vw,2rem);--r:clamp(1.1rem,3vw,2.5rem)}
+[data-theme=dark]{--bg:#120f10;--text:#fce4ec;--soft:#2a1b1f;--main:#ff80ab;--card:#1a1617;--panel:rgba(30,22,25,.88);--lb:rgba(18,15,16,.95)}
+*{box-sizing:border-box}
+html{-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Cormorant Garamond','Songti SC','Noto Serif SC',Georgia,serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;scrollbar-width:none}
+::-webkit-scrollbar{display:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+svg{display:block;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#fx{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 
-  <!-- 不再依赖 Tailwind / Google Fonts，减少首次访问的额外网络请求 -->
-  <link rel="preload" as="image" href="./images/p01.jpg" fetchpriority="high">
-  <link rel="preload" as="image" href="./images/p02.jpg" fetchpriority="high">
+header{text-align:center;padding:3rem 1rem 3.5rem;animation:in 1.2s ease both}
+h1{margin:0;font-size:clamp(1.8rem,5vw,3.5rem);font-style:italic;font-weight:300;letter-spacing:.25em;color:rgba(240,98,146,.8)}
+.divider{width:4rem;height:1px;margin:1rem auto 0;background:linear-gradient(to right,transparent,rgba(240,98,146,.4),transparent)}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+@keyframes fade{from{opacity:0}}
 
-  <style>
-    :root {
-      --bg: #fff9fa;
-      --text: #4a4a4a;
-      --accent: #f06292;
-      --soft: #fce4ec;
-      --card: #fff;
-      --glass: rgba(255,255,255,.78);
-      --line: rgba(240,98,146,.18);
-    }
-    [data-theme="dark"] {
-      --bg: #120f10;
-      --text: #fce4ec;
-      --accent: #ff80ab;
-      --soft: #2a1b1f;
-      --card: #1a1617;
-      --glass: rgba(18,15,16,.78);
-      --line: rgba(255,128,171,.18);
-    }
+main{max-width:1500px;margin:0 auto;padding:0 1rem 5rem}
+#grid{display:flex;gap:var(--gap);align-items:flex-start;min-height:50vh}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--gap)}
+#hint{text-align:center;color:rgba(240,98,146,.6);letter-spacing:.2em;text-transform:uppercase;padding:4rem 0}
+#end{height:30vh;display:flex;align-items:center;justify-content:center}
+#end i{width:.4rem;height:.4rem;border-radius:50%;background:var(--main);opacity:.35}
 
-    * { box-sizing: border-box; }
-    html { background: var(--bg); }
-    body {
-      margin: 0;
-      overflow-x: hidden;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Georgia, "Times New Roman", serif;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-      transition: background-color .22s ease, color .22s ease;
-    }
-    button { font: inherit; }
-    ::-webkit-scrollbar { width: 0; height: 0; }
-    * { scrollbar-width: none; }
+/* 卡片：只对 transform/opacity 做动画；屏幕外的卡片不渲染 */
+.card{display:block;position:relative;width:100%;overflow:hidden;border-radius:var(--r);background:var(--soft);content-visibility:auto;contain-intrinsic-size:auto 320px}
+.card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:fade .8s ease both;transition:transform .9s cubic-bezier(.19,1,.22,1)}
+.card span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.9rem;opacity:0;transition:opacity .5s;background:rgba(0,0,0,.05);text-shadow:0 4px 8px rgba(0,0,0,.4)}
+@media(hover:hover){.card:hover img{transform:scale(1.06)}.card:hover span{opacity:1}.card:hover{box-shadow:0 30px 60px -15px rgba(240,98,146,.28)}}
+.card:active{transform:scale(.985)}
+.card:focus-visible,.btn:focus-visible,#play:focus-visible{outline:2px solid var(--main);outline-offset:3px}
 
-    /* 极轻的背景装饰：不再使用全屏 canvas + 每帧粒子 */
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: -1;
-      background:
-        radial-gradient(circle at 50% -10%, rgba(240,98,146,.08), transparent 38%),
-        radial-gradient(circle at 100% 60%, rgba(240,98,146,.035), transparent 35%);
-    }
+/* 按钮：不使用 backdrop-filter（滚动时重绘开销很大） */
+#ctrl{position:fixed;right:max(1rem,2vw);bottom:max(1rem,2vw);z-index:40;display:flex;flex-direction:column;gap:.9rem}
+.btn{width:3.4rem;height:3.4rem;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid rgba(240,98,146,.25);color:var(--main);box-shadow:0 8px 24px rgba(0,0,0,.1);transition:transform .3s}
+.btn:active{transform:scale(.92)}
+.btn svg{width:1.4rem;height:1.4rem}
+.btn.on{background:rgba(240,98,146,.16);border-color:rgba(240,98,146,.6)}
+[data-theme=dark] .moon,html:not([data-theme=dark]) .sun,.btn:not(.on) .pa,.btn.on .dn{display:none}
 
-    #loading {
-      min-height: 100svh;
-      display: grid;
-      place-items: center;
-      color: rgba(240,98,146,.65);
-      letter-spacing: .18em;
-      font-size: 12px;
-    }
-    .loading-inner { text-align:center; }
-    .loading-ring {
-      width: 28px;
-      height: 28px;
-      margin: 0 auto 16px;
-      border: 2px solid rgba(240,98,146,.14);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+#music{position:fixed;left:max(1rem,2vw);bottom:max(1rem,2vw);z-index:40;display:none;align-items:center;gap:.7rem;min-width:10.5rem;padding:.8rem 1.2rem .8rem 1rem;border-radius:1.5rem;overflow:hidden;background:var(--panel);border:1px solid rgba(240,98,146,.25);box-shadow:0 8px 24px rgba(0,0,0,.1)}
+#music.show{display:flex}
+#play{color:var(--main);display:flex;flex-shrink:0}
+#play svg{width:1.4rem;height:1.4rem;fill:currentColor;stroke:none}
+#play .ps,#music.playing .pl{display:none}#music.playing .ps{display:block}
+#track{font-size:.8rem;letter-spacing:.12em;color:rgba(240,98,146,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8rem}
+#bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(to right,#f06292,#ff80ab);transform:scaleX(0);transform-origin:left}
 
-    #app {
-      opacity: 0;
-      transition: opacity .35s ease;
-    }
-    #app.ready { opacity: 1; }
-
-    main {
-      width: min(1500px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 54px 0 100px;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-    h1 {
-      margin: 0;
-      color: rgba(240,98,146,.82);
-      font-size: clamp(28px, 5vw, 54px);
-      line-height: 1.15;
-      font-style: italic;
-      font-weight: 400;
-      letter-spacing: .12em;
-    }
-    .divider {
-      width: 58px;
-      height: 1px;
-      margin: 16px auto 0;
-      background: linear-gradient(90deg, transparent, rgba(240,98,146,.45), transparent);
-    }
-
-    /* 单一 DOM 瀑布流：原版同时创建 desktop/mobile 两套卡片，这里只创建一套 */
-    .gallery {
-      column-count: 4;
-      column-gap: 24px;
-    }
-    .photo-card {
-      position: relative;
-      display: inline-block;
-      width: 100%;
-      margin: 0 0 24px;
-      overflow: hidden;
-      break-inside: avoid;
-      border-radius: 22px;
-      background: var(--card);
-      cursor: pointer;
-      transform: translateZ(0);
-      contain: paint;
-      box-shadow: 0 8px 30px rgba(0,0,0,.035);
-      transition: transform .22s ease, box-shadow .22s ease;
-    }
-    .photo-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 16px 40px rgba(240,98,146,.12);
-    }
-    .photo-card:active { transform: scale(.985); }
-
-    .photo-card img {
-      display: block;
-      width: 100%;
-      height: auto;
-      opacity: 0;
-      background: linear-gradient(135deg, var(--soft), var(--bg));
-      transition: opacity .25s ease;
-    }
-    .photo-card img.loaded { opacity: 1; }
-
-    .placeholder {
-      position: absolute;
-      inset: 0;
-      min-height: 160px;
-      background: linear-gradient(135deg, var(--soft), var(--bg));
-      animation: breathe 1.8s ease-in-out infinite alternate;
-    }
-    .photo-card.done .placeholder { display: none; }
-    @keyframes breathe { from { opacity:.65 } to { opacity:1 } }
-
-    .overlay {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      opacity: 0;
-      background: rgba(0,0,0,.05);
-      pointer-events: none;
-      transition: opacity .18s ease;
-    }
-    .photo-card:hover .overlay { opacity: 1; }
-    .overlay span {
-      color: white;
-      font-size: 30px;
-      text-shadow: 0 3px 12px rgba(0,0,0,.45);
-    }
-
-    #controls {
-      position: fixed;
-      right: max(18px, env(safe-area-inset-right));
-      bottom: max(18px, env(safe-area-inset-bottom));
-      z-index: 40;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .ctrl-btn, #btn-music-play {
-      border: 1px solid var(--line);
-      outline: none;
-      color: var(--accent);
-      background: var(--glass);
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 25px rgba(0,0,0,.08);
-      cursor: pointer;
-    }
-    .ctrl-btn {
-      width: 50px;
-      height: 50px;
-      padding: 0;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      transition: transform .16s ease, background-color .16s ease;
-    }
-    .ctrl-btn:hover { transform: scale(1.06); }
-    .ctrl-btn:active { transform: scale(.94); }
-    .ctrl-btn.active { background: rgba(240,98,146,.12); }
-
-    .ctrl-btn svg { width: 22px; height: 22px; }
-
-    #music-panel {
-      position: fixed;
-      left: max(16px, env(safe-area-inset-left));
-      bottom: max(18px, env(safe-area-inset-bottom));
-      z-index: 40;
-      min-width: 205px;
-      max-width: calc(100vw - 90px);
-      padding: 10px 13px 10px 11px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--glass);
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 25px rgba(0,0,0,.08);
-    }
-    #btn-music-play {
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      display: grid;
-      place-items: center;
-      border: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-    #music-track-name {
-      max-width: 145px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      font-size: 11px;
-      letter-spacing: .1em;
-      color: rgba(240,98,146,.8);
-      text-transform: uppercase;
-    }
-    #music-progress-wrap {
-      position: absolute;
-      left: 12px;
-      right: 12px;
-      bottom: 4px;
-      height: 1px;
-      overflow: hidden;
-      background: rgba(240,98,146,.1);
-    }
-    #music-progress-bar {
-      width: 0;
-      height: 100%;
-      background: var(--accent);
-    }
-
-    /* Lightbox：只在打开时启用模糊，避免平时一直消耗合成性能 */
-    #lightbox {
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      background: rgba(255,249,250,.94);
-      transition: opacity .2s ease, visibility .2s ease;
-    }
-    [data-theme="dark"] #lightbox { background: rgba(18,15,16,.94); }
-    #lightbox.open {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-    }
-    #lightbox-content {
-      position: relative;
-      max-width: 94vw;
-      max-height: 90svh;
-      transform: scale(.97);
-      transition: transform .2s ease;
-    }
-    #lightbox.open #lightbox-content { transform: scale(1); }
-    #lightbox-img {
-      display: block;
-      max-width: 94vw;
-      max-height: 84svh;
-      width: auto;
-      height: auto;
-      object-fit: contain;
-      border-radius: 18px;
-      opacity: 1;
-      transform: scale(1);
-      transition: opacity .16s ease, transform .16s ease;
-      box-shadow: 0 25px 70px rgba(0,0,0,.25);
-      background: var(--card);
-    }
-    #lightbox-prev, #lightbox-next {
-      position: fixed;
-      top: 50%;
-      z-index: 101;
-      width: 48px;
-      height: 48px;
-      padding: 0;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      color: var(--accent);
-      background: var(--glass);
-      cursor: pointer;
-      transform: translateY(-50%);
-      font-size: 34px;
-      line-height: 1;
-    }
-    #lightbox-prev { left: max(14px, env(safe-area-inset-left)); }
-    #lightbox-next { right: max(14px, env(safe-area-inset-right)); }
-    #lightbox-prev:active, #lightbox-next:active { transform: translateY(-50%) scale(.92); }
-
-    #lightbox-close {
-      position: fixed;
-      top: max(16px, env(safe-area-inset-top));
-      right: max(16px, env(safe-area-inset-right));
-      z-index: 101;
-      width: 48px;
-      height: 48px;
-      padding: 0;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      color: var(--accent);
-      background: var(--glass);
-      cursor: pointer;
-    }
-    #lightbox-caption {
-      margin-top: 12px;
-      text-align: center;
-      color: rgba(240,98,146,.65);
-      font: 11px/1.4 Georgia, serif;
-      letter-spacing: .18em;
-    }
-
-    @media (max-width: 1000px) {
-      .gallery { column-count: 3; column-gap: 18px; }
-      .photo-card { margin-bottom: 18px; }
-    }
-    @media (max-width: 700px) {
-      #lightbox-prev, #lightbox-next {
-        width: 42px;
-        height: 42px;
-        font-size: 29px;
-      }
-      main { width: calc(100% - 18px); padding-top: 38px; }
-      header { margin-bottom: 30px; }
-      h1 { font-size: clamp(26px, 8vw, 38px); letter-spacing: .08em; }
-      .gallery { column-count: 2; column-gap: 12px; }
-      .photo-card { margin-bottom: 12px; border-radius: 16px; }
-      #controls { gap: 8px; }
-      .ctrl-btn { width: 46px; height: 46px; }
-      #music-panel { min-width: 170px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: .01ms !important;
-        transition-duration: .01ms !important;
-      }
-    }
-  </style>
+/* 大图 */
+#lb{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:var(--lb);opacity:0;visibility:hidden;transition:opacity .4s,visibility 0s .4s}
+#lb.open{opacity:1;visibility:visible;transition:opacity .4s}
+#lbi{max-width:88vw;max-height:80vh;object-fit:contain;border-radius:var(--r);border:4px solid var(--card);box-shadow:0 30px 80px rgba(0,0,0,.25);transform:scale(.96);transition:transform .6s cubic-bezier(.19,1,.22,1)}
+#lb.open #lbi{transform:none}
+#cap{position:absolute;left:0;right:0;bottom:1.6rem;text-align:center;font-size:.8rem;letter-spacing:.3em;color:rgba(240,98,146,.6)}
+.nav{position:absolute;top:50%;transform:translateY(-50%);width:3.4rem;height:3.4rem;color:rgba(240,98,146,.6);display:flex;align-items:center;justify-content:center}
+.nav:hover{color:var(--main)}.nav svg{width:2rem;height:2rem}
+#prev{left:.5rem}#next{right:.5rem}
+#x{position:absolute;top:1rem;right:1rem;width:3rem;height:3rem;color:rgba(240,98,146,.6);display:flex;align-items:center;justify-content:center}
+#x svg{width:2rem;height:2rem}
+::view-transition-group(root){animation-duration:.45s}
+@media(prefers-reduced-motion:reduce){*,::before,::after{animation:none!important;transition:none!important}}
+</style>
 </head>
-
 <body>
-  <div id="loading">
-    <div class="loading-inner">
-      <div class="loading-ring"></div>
-      <div>正在打开相册</div>
-    </div>
-  </div>
+<canvas id="fx"></canvas>
+<header><h1>ZJ's Photo | 相册</h1><div class="divider"></div></header>
+<main>
+  <div id="hint">Curating Dreamscape</div>
+  <div id="grid"></div>
+  <div id="end"><i></i></div>
+</main>
 
-  <div id="app">
-    <main>
-      <header>
-        <h1>ZJ's Photo | 相册</h1>
-        <div class="divider"></div>
-      </header>
+<div id="ctrl">
+  <button class="btn" id="theme" aria-label="切换深色/浅色">
+    <svg class="moon" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+    <svg class="sun" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+  </button>
+  <button class="btn" id="auto" aria-label="自动滚动">
+    <svg class="dn" viewBox="0 0 24 24"><path d="M19 13l-7 7-7-7m14-8l-7 7-7-7"/></svg>
+    <svg class="pa" viewBox="0 0 24 24"><path d="M10 9v6m4-6v6"/></svg>
+  </button>
+</div>
 
-      <section class="gallery" id="gallery" aria-label="照片墙"></section>
-    </main>
-  </div>
+<div id="music">
+  <button id="play" aria-label="播放/暂停音乐">
+    <svg class="pl" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    <svg class="ps" viewBox="0 0 24 24"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></svg>
+  </button>
+  <div id="track">♪</div><div id="bar"></div>
+</div>
 
-  <div id="controls">
-    <button id="btn-theme" class="ctrl-btn" type="button" aria-label="切换深色模式" title="切换深色模式">
-      <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M20.35 15.35A9 9 0 0 1 8.65 3.65 9 9 0 1 0 20.35 15.35Z"/>
-      </svg>
-      <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:none">
-        <circle cx="12" cy="12" r="4"/>
-        <path stroke-linecap="round" d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M19.07 4.93l-1.41 1.41M6.34 17.66l-1.41 1.41"/>
-      </svg>
-    </button>
+<div id="lb" aria-hidden="true">
+  <button id="x" aria-label="关闭"><svg viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
+  <button class="nav" id="prev" aria-label="上一张"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button class="nav" id="next" aria-label="下一张"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+  <img id="lbi" alt=""><div id="cap"></div>
+</div>
 
-    <button id="btn-scroll" class="ctrl-btn" type="button" aria-label="自动滚动" title="自动滚动">
-      <svg id="icon-scroll-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="m19 13-7 7-7-7m14-8-7 7-7-7"/>
-      </svg>
-      <svg id="icon-scroll-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:none">
-        <path stroke-linecap="round" d="M10 8v8M14 8v8"/>
-      </svg>
-    </button>
-  </div>
+<script>
+(()=>{
+/* ═══ 配置区 ═══
+   图片：images/p01.jpg、p02.jpg …（也认 p1.jpg 及 jpeg/png/webp）。加图后直接按序号放进去即可，会自动识别。
+   大图（可选）：把原图放进 images/full/，文件名与小图一致（p01.jpg…），点开大图时才会加载原图；没有这个文件夹就用小图。
+   音乐：music/bgm.mp3，点播放才开始下载，不影响打开速度。 */
+const KNOWN=20, MAX=60, EXTS=['jpg','jpeg','png','webp'];
+const FULL_DIR='./images/full/';
+const MUSIC=['./music/bgm.mp3','./music/bgm.ogg','./music/bgm.wav','./music/music.mp3','./music/music.ogg','./music/background.mp3'];
+const SPEED=50;      // 自动滚动速度（像素/秒）
+const MAX_ROUNDS=30; // 相册循环轮数上限
 
-  <div id="music-panel" aria-label="背景音乐">
-    <button id="btn-music-play" type="button" aria-label="播放或暂停音乐">
-      <svg id="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-      <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></svg>
-    </button>
-    <div id="music-track-name">♪ bgm</div>
-    <div id="music-progress-wrap"><div id="music-progress-bar"></div></div>
-  </div>
+const $=s=>document.querySelector(s), root=document.documentElement;
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const photos=[], cards=[]; let rounds=0, ready=false;
 
-  <div id="lightbox" aria-hidden="true">
-    <button id="lightbox-prev" type="button" aria-label="上一张">‹</button>
-    <button id="lightbox-next" type="button" aria-label="下一张">›</button>
-    <button id="lightbox-close" type="button" aria-label="关闭照片">✕</button>
-    <div id="lightbox-content">
-      <img id="lightbox-img" src="" alt="">
-      <div id="lightbox-caption"></div>
-    </div>
-  </div>
+/* ── 图片探测：按顺序逐张显示，不再等全部下载完 ── */
+let hit=null;
+const probe=u=>new Promise(r=>{const i=new Image();i.decoding='async';i.onload=()=>r({url:u,w:i.naturalWidth,h:i.naturalHeight,name:u.split('/').pop()});i.onerror=()=>r(null);i.src=u});
+async function find(n){
+  const pad=String(n).padStart(2,'0'), list=[];
+  for(const e of EXTS)for(const p of [pad,String(n)])list.push([e,p===pad]);
+  if(hit)list.sort((a,b)=>(b[0]===hit[0]&&b[1]===hit[1])-(a[0]===hit[0]&&a[1]===hit[1]));
+  for(const [e,z] of list){const r=await probe(`./images/p${z?pad:n}.${e}`);if(r){hit=[e,z];return r}}
+  return null;
+}
+async function load(){
+  const first=Array.from({length:KNOWN},(_,i)=>find(i+1));
+  for(const p of first){const r=await p;if(r)addPhoto(r)}
+  for(let n=KNOWN+1;n<=MAX;n++){const r=await find(n);if(!r)break;addPhoto(r)}
+  if(!photos.length)$('#hint').textContent='还没有找到图片（images/p01.jpg …）';
+  ready=true;io.disconnect();io.observe($('#end'));findMusic();
+}
+function addPhoto(p){photos.push(p);if(!rounds)$('#hint').style.display='none';add(photos.length-1,true)}
 
-  <script>
-  (() => {
-    "use strict";
+/* ── 瀑布流：单份 DOM，按宽度切 2/3/4 列 ── */
+let n=0,cols=[],hs=[];
+const colN=()=>innerWidth<700?2:innerWidth<1100?3:4;
+function mount(){
+  n=colN();const g=$('#grid');g.textContent='';
+  cols=Array.from({length:n},()=>{const c=document.createElement('div');c.className='col';g.append(c);return c});
+  hs=Array(n).fill(0);cards.forEach(place);
+}
+function place(c){let s=0;for(let i=1;i<n;i++)if(hs[i]<hs[s])s=i;cols[s].append(c.el);hs[s]+=c.r+.08}
+function add(idx,eager){
+  const p=photos[idx],el=document.createElement('button'),im=new Image(),st=document.createElement('span');
+  el.className='card';el.style.aspectRatio=p.w+'/'+p.h;el.setAttribute('aria-label','查看第 '+(idx+1)+' 张');
+  im.src=p.url;im.alt='';im.decoding='async';if(!eager)im.loading='lazy';st.textContent='✧';
+  el.append(im,st);el.onclick=()=>openLB(idx);
+  const c={el,r:p.h/p.w};cards.push(c);place(c);
+}
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(colN()!==n)mount()},150)});
+const io=new IntersectionObserver(e=>{
+  if(!ready||!e[0].isIntersecting||!photos.length||rounds>=MAX_ROUNDS)return;
+  rounds++;photos.forEach((_,i)=>add(i,false));
+},{rootMargin:'1500px 0px'});
+rounds=1;mount();load();
+new MutationObserver(()=>{}).disconnect();
 
-    /*
-      项目结构保持不变：
-      images/p01.jpg ... images/p20.jpg
-      music/bgm.mp3
-    */
-    const PHOTO_COUNT = 20;
-    const photos = Array.from(
-      { length: PHOTO_COUNT },
-      (_, i) => `./images/p${String(i + 1).padStart(2, "0")}.jpg`
-    );
+/* ── 大图 ── */
+const lb=$('#lb'),lbi=$('#lbi');let cur=0,fullOK=true;
+function show(i){
+  cur=(i+photos.length)%photos.length;const p=photos[cur];
+  lbi.src=p.url;$('#cap').textContent=`Captured Muse · ${p.name} · ${cur+1}/${photos.length}`;
+  if(fullOK){const f=FULL_DIR+p.name,t=new Image();t.onload=()=>{if(photos[cur]===p)lbi.src=f};t.onerror=()=>{fullOK=false};t.src=f}
+}
+function openLB(i){show(i);lb.classList.add('open');lb.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';$('#x').focus()}
+function closeLB(){lb.classList.remove('open');lb.setAttribute('aria-hidden','true');document.body.style.overflow=''}
+$('#x').onclick=closeLB;$('#prev').onclick=()=>show(cur-1);$('#next').onclick=()=>show(cur+1);
+lb.onclick=e=>{if(e.target===lb)closeLB()};
+addEventListener('keydown',e=>{if(!lb.classList.contains('open'))return;if(e.key==='Escape')closeLB();if(e.key==='ArrowLeft')show(cur-1);if(e.key==='ArrowRight')show(cur+1)});
+let sx=0;lb.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+lb.addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>50)show(cur+(d<0?1:-1))});
 
-    const $ = id => document.getElementById(id);
-    const gallery = $("gallery");
-    const loading = $("loading");
-    const app = $("app");
+/* ── 主题：切换时只重算一次样式，并用系统过渡做淡入淡出 ── */
+$('#theme').onclick=()=>{
+  const t=root.dataset.theme==='dark'?'light':'dark';
+  const apply=()=>{root.dataset.theme=t;pal()};
+  document.startViewTransition&&!reduce?document.startViewTransition(apply):apply();
+  try{localStorage.setItem('theme',t)}catch(e){}
+};
 
-    // ---------- 图片 ----------
-    const observer = "IntersectionObserver" in window
-      ? new IntersectionObserver(entries => {
-          entries.forEach(entry => {
-            if (!entry.isIntersecting) return;
-            const img = entry.target;
-            img.src = img.dataset.src;
-            observer.unobserve(img);
-          });
-        }, { rootMargin: "500px 0px" })
-      : null;
+/* ── 自动滚动：按时间计算速度，用户一滚动就自动停下 ── */
+let auto=false,raf=0,last=0,pos=0;const ab=$('#auto');
+function step(t){
+  if(!auto)return;
+  const dt=Math.min(t-last,50);last=t;
+  if(!lb.classList.contains('open')){
+    const y=scrollY;if(Math.abs(y-pos)>3)pos=y;
+    pos+=SPEED*dt/1000;scrollTo(0,pos);
+    if(rounds>=MAX_ROUNDS&&y+innerHeight>=root.scrollHeight-2)return setAuto(false);
+  }
+  raf=requestAnimationFrame(step);
+}
+function setAuto(v){auto=v;ab.classList.toggle('on',v);cancelAnimationFrame(raf);if(v){pos=scrollY;last=performance.now();raf=requestAnimationFrame(step)}}
+ab.onclick=()=>setAuto(!auto);
+['wheel','touchstart','keydown'].forEach(k=>addEventListener(k,()=>auto&&setAuto(false),{passive:true}));
 
-    function createCard(src, index) {
-      const card = document.createElement("article");
-      card.className = "photo-card";
+/* ── 音乐：点播放才下载；播放/暂停带淡入淡出 ── */
+const au=new Audio(),mu=$('#music');au.loop=true;au.preload='none';
+async function findMusic(){
+  for(const u of MUSIC){
+    try{const r=await fetch(u,{method:'HEAD'});if(!r.ok)continue}catch(e){}
+    au.src=u;$('#track').textContent='♪  '+u.split('/').pop().replace(/\.[^.]+$/,'').replace(/[-_]/g,' ');mu.classList.add('show');return;
+  }
+}
+let fd;function fadeTo(v,done){clearInterval(fd);fd=setInterval(()=>{const d=v-au.volume;if(Math.abs(d)<.04){au.volume=v;clearInterval(fd);done&&done()}else au.volume=Math.max(0,Math.min(1,au.volume+Math.sign(d)*.04))},30)}
+$('#play').onclick=()=>{
+  if(au.paused){au.volume=0;au.play().then(()=>{mu.classList.add('playing');fadeTo(.7)}).catch(()=>{})}
+  else{mu.classList.remove('playing');fadeTo(0,()=>au.pause())}
+};
+au.addEventListener('timeupdate',()=>{if(au.duration)$('#bar').style.transform=`scaleX(${au.currentTime/au.duration})`});
 
-      const placeholder = document.createElement("div");
-      placeholder.className = "placeholder";
-
-      const img = document.createElement("img");
-      img.alt = `照片 ${index + 1}`;
-      img.decoding = "async";
-      img.dataset.src = src;
-
-      // 首屏前两张直接加载，其余交给 IntersectionObserver。
-      if (index < 2) {
-        img.src = src;
-        img.fetchPriority = "high";
-      } else if (observer) {
-        observer.observe(img);
-      } else {
-        img.src = src;
-      }
-
-      img.addEventListener("load", () => {
-        img.classList.add("loaded");
-        card.classList.add("done");
-      }, { once: true });
-
-      img.addEventListener("error", () => {
-        card.classList.add("done");
-        placeholder.style.display = "none";
-      }, { once: true });
-
-      const overlay = document.createElement("div");
-      overlay.className = "overlay";
-      overlay.innerHTML = "<span>✧</span>";
-
-      card.append(placeholder, img, overlay);
-      card.addEventListener("click", () => openLightbox(src, index));
-      return card;
-    }
-
-    // 只创建 20 张卡片，不再复制成 120 张，也不再同时创建 desktop/mobile 两套。
-    photos.forEach((src, i) => gallery.appendChild(createCard(src, i)));
-
-    // ---------- Lightbox ----------
-    const lightbox = $("lightbox");
-    const lightboxImg = $("lightbox-img");
-    const lightboxCaption = $("lightbox-caption");
-
-    let currentPhoto = 0;
-
-    function showPhoto(index, animate = true) {
-      currentPhoto = (index + photos.length) % photos.length;
-      const src = photos[currentPhoto];
-      if (animate) {
-        lightboxImg.style.opacity = "0";
-        lightboxImg.style.transform = "scale(.985)";
-        requestAnimationFrame(() => {
-          lightboxImg.src = src;
-          lightboxImg.alt = `照片 ${currentPhoto + 1}`;
-          lightboxCaption.textContent = `${String(currentPhoto + 1).padStart(2, "0")}  /  ${String(photos.length).padStart(2, "0")}`;
-          lightboxImg.onload = () => {
-            lightboxImg.style.opacity = "1";
-            lightboxImg.style.transform = "scale(1)";
-          };
-        });
-      } else {
-        lightboxImg.src = src;
-        lightboxImg.alt = `照片 ${currentPhoto + 1}`;
-        lightboxCaption.textContent = `${String(currentPhoto + 1).padStart(2, "0")}  /  ${String(photos.length).padStart(2, "0")}`;
-      }
-    }
-
-    function openLightbox(src, index) {
-      showPhoto(index, false);
-      lightbox.classList.add("open");
-      lightbox.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-    }
-
-    function closeLightbox() {
-      lightbox.classList.remove("open");
-      lightbox.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
-    }
-
-    $("lightbox-close").addEventListener("click", closeLightbox);
-    $("lightbox-prev").addEventListener("click", () => showPhoto(currentPhoto - 1));
-    $("lightbox-next").addEventListener("click", () => showPhoto(currentPhoto + 1));
-
-    let touchStartX = 0;
-    lightbox.addEventListener("touchstart", e => {
-      touchStartX = e.changedTouches[0].clientX;
-    }, { passive: true });
-    lightbox.addEventListener("touchend", e => {
-      const dx = e.changedTouches[0].clientX - touchStartX;
-      if (Math.abs(dx) > 45) {
-        showPhoto(currentPhoto + (dx < 0 ? 1 : -1));
-      }
-    }, { passive: true });
-
-    lightbox.addEventListener("click", e => {
-      if (e.target === lightbox) closeLightbox();
-    });
-    window.addEventListener("keydown", e => {
-      if (e.key === "Escape") closeLightbox();
-      if (e.key === "ArrowLeft") showPhoto(currentPhoto - 1);
-      if (e.key === "ArrowRight") showPhoto(currentPhoto + 1);
-    });
-
-    // ---------- 深色 / 浅色 ----------
-    const html = document.documentElement;
-    const themeBtn = $("btn-theme");
-    const moon = $("icon-moon");
-    const sun = $("icon-sun");
-
-    function setTheme(theme) {
-      html.dataset.theme = theme;
-      const dark = theme === "dark";
-      moon.style.display = dark ? "none" : "";
-      sun.style.display = dark ? "" : "none";
-      document.querySelector('meta[name="theme-color"]').setAttribute(
-        "content", dark ? "#120f10" : "#fff9fa"
-      );
-      try { localStorage.setItem("photo-theme", theme); } catch (_) {}
-    }
-
-    let savedTheme = null;
-    try { savedTheme = localStorage.getItem("photo-theme"); } catch (_) {}
-    setTheme(savedTheme === "dark" ? "dark" : "light");
-
-    themeBtn.addEventListener("click", () => {
-      setTheme(html.dataset.theme === "dark" ? "light" : "dark");
-    });
-
-    // ---------- 音乐 ----------
-    // 不再为了“检测音乐”而逐个等待多个不存在的文件。
-    // 直接使用项目结构中的 music/bgm.mp3。
-    const audio = new Audio("./music/bgm.mp3");
-    audio.loop = true;
-    audio.preload = "metadata";
-
-    const playBtn = $("btn-music-play");
-    const playIcon = $("icon-play");
-    const pauseIcon = $("icon-pause");
-    const progress = $("music-progress-bar");
-
-    playBtn.addEventListener("click", async () => {
-      try {
-        if (audio.paused) {
-          await audio.play();
-          playIcon.style.display = "none";
-          pauseIcon.style.display = "";
-        } else {
-          audio.pause();
-          playIcon.style.display = "";
-          pauseIcon.style.display = "none";
-        }
-      } catch (_) {
-        // 浏览器若阻止播放，不阻塞页面其它功能。
-      }
-    });
-
-    audio.addEventListener("timeupdate", () => {
-      if (audio.duration) {
-        progress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
-      }
-    });
-
-    audio.addEventListener("pause", () => {
-      playIcon.style.display = "";
-      pauseIcon.style.display = "none";
-    });
-
-    // ---------- 自动滚动 ----------
-    // 原版每一帧都 scrollBy，会持续制造滚动任务。
-    // 这里降低调用频率，让手指自由滑动更容易保持流畅。
-    let autoScroll = false;
-    let scrollTimer = null;
-
-    function scrollStep() {
-      if (!autoScroll) return;
-      window.scrollBy(0, 1);
-      scrollTimer = setTimeout(scrollStep, 24);
-    }
-
-    $("btn-scroll").addEventListener("click", () => {
-      autoScroll = !autoScroll;
-      $("btn-scroll").classList.toggle("active", autoScroll);
-      $("icon-scroll-off").style.display = autoScroll ? "none" : "";
-      $("icon-scroll-on").style.display = autoScroll ? "" : "none";
-
-      if (autoScroll) {
-        clearTimeout(scrollTimer);
-        scrollStep();
-      } else {
-        clearTimeout(scrollTimer);
-      }
-    });
-
-    // 页面本身不再等待全部图片/音乐下载完成才显示。
-    // HTML 建好即可进入相册，图片按需加载。
-    requestAnimationFrame(() => {
-      loading.style.display = "none";
-      app.classList.add("ready");
-    });
-  })();
-  </script>
+/* ── 鼠标光点：只在有粒子时才跑动画，数量封顶，仅鼠标设备 ── */
+const cv=$('#fx'),cx=cv.getContext('2d');let W,H,ps=[],run=false,mx=0,my=0,moved=false,cols2=[];
+function pal(){const d=root.dataset.theme==='dark';cols2=[340,348,356].map(h=>`hsl(${h},${d?80:100}%,${d?60:80}%)`)}
+function size(){W=cv.width=innerWidth;H=cv.height=innerHeight}
+pal();size();addEventListener('resize',size);
+if(!reduce&&matchMedia('(hover:hover)').matches){
+  addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;mx=e.clientX;my=e.clientY;moved=true;if(!run){run=true;requestAnimationFrame(tick)}},{passive:true});
+}
+function tick(){
+  cx.clearRect(0,0,W,H);
+  if(moved&&ps.length<120){for(let i=0;i<2;i++)ps.push({x:mx,y:my,vx:Math.random()*2-1,vy:Math.random()*2-1,l:1,s:Math.random()*4+1,c:cols2[i%3]});moved=false}
+  for(let i=ps.length-1;i>=0;i--){
+    const p=ps[i];p.x+=p.vx;p.y+=p.vy;p.l-=.02;
+    if(p.l<=0){ps[i]=ps[ps.length-1];ps.pop();continue}
+    cx.globalAlpha=p.l;cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.s,0,6.283);cx.fill();
+  }
+  if(ps.length||moved)requestAnimationFrame(tick);else run=false;
+}
+})();
+</script>
 </body>
 </html>
